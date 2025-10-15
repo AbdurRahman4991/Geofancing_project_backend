@@ -15,12 +15,20 @@ class ResetPasswordController extends Controller
             'password' => 'required|min:8|confirmed',
         ]);
 
-        $status = Password::reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
-            function ($user, $password) {
-                $user->forceFill(['password' => bcrypt($password)])->save();
-            }
-        );
+        // $status = Password::reset(
+        //     $request->only('email', 'password', 'password_confirmation', 'token'),
+        //     function ($user, $password) {
+        //         $user->forceFill(['password' => bcrypt($password)])->save();
+        //     }
+        // );
+        // Reset closure
+$status = Password::reset(
+    $request->only('email', 'password', 'password_confirmation', 'token'),
+    function ($user, $password) {
+        $user->forceFill(['password' => $password])->save(); // plain — cast will hash
+    }
+);
+
 
         return $status === Password::PASSWORD_RESET
             ? response()->json(['message' => 'Password reset successfully.'])
