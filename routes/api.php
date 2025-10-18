@@ -14,9 +14,10 @@ use App\Http\Controllers\ResetPasswordController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
-Route::post('/password/forgot', [ForgotPasswordController::class, 'sendResetLinkEmail']);
-Route::post('/reset-password', [ResetPasswordController::class, 'reset']);
+Route::post('/password/forgot', [ForgotPasswordController::class, 'sendForgetOtp']);
+Route::post('/reset-password', [ResetPasswordController::class, 'resetPassword']);
 Route::get('/email/verify/{id}/{hash}', [VerificationController::class, 'verify'])->name('verification.verify');
+Route::post('/verify-otp', [VerificationController::class, 'verifyOtp']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/email/resend', [VerificationController::class, 'resend']);

@@ -24,6 +24,9 @@ class User extends Authenticatable implements MustVerifyEmail
         'name',
         'email',
         'password',
+        'otp',
+        'otp_expires_at',
+        'email_verified_at',
     ];
 
     /**
@@ -49,8 +52,4 @@ class User extends Authenticatable implements MustVerifyEmail
         ];
     }
 
-    // public function setPasswordAttribute($value)
-    // {
-    //     $this->attributes['password'] = bcrypt($value);
-    // }
 }
