@@ -71,26 +71,26 @@ class VerificationController extends Controller
         return response()->json(['message' => 'Email verified successfully']);
     }
 
-public function resendOtp(Request $request)
-{
-    $request->validate(['email' => 'required|email']);
+    public function resendOtp(Request $request)
+    {
+        $request->validate(['email' => 'required|email']);
 
-    $user = User::where('email', $request->email)->first();
+        $user = User::where('email', $request->email)->first();
 
-    if (!$user) {
-        return response()->json(['message' => 'User not found'], 404);
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], 404);
+        }
+
+        $otp = rand(100000, 999999);
+        $user->update([
+            'otp' => $otp,
+            'otp_expires_at' => now()->addMinutes(10),
+        ]);
+
+        Mail::to($user->email)->send(new SendOtpMail($otp));
+
+        return response()->json(['message' => 'New OTP sent']);
     }
-
-    $otp = rand(100000, 999999);
-    $user->update([
-        'otp' => $otp,
-        'otp_expires_at' => now()->addMinutes(10),
-    ]);
-
-    Mail::to($user->email)->send(new SendOtpMail($otp));
-
-    return response()->json(['message' => 'New OTP sent']);
-}
 
 
 }

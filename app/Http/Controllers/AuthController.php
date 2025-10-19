@@ -55,6 +55,7 @@ class AuthController extends Controller
         Mail::to($user->email)->send(new SendOtpMail($otp));
 
         return response()->json([
+            'success' => true,
             'message' => 'Registration successful. OTP has been sent to your email.',
             'email' => $user->email
         ], 201);
