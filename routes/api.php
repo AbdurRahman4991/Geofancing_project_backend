@@ -14,6 +14,7 @@ use App\Http\Controllers\ResetPasswordController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/verify-otp-login', [AuthController::class, 'verifyOtpLogin']);
 Route::post('/password/forgot', [ForgotPasswordController::class, 'sendForgetOtp']);
 Route::post('/reset-password', [ResetPasswordController::class, 'resetPassword']);
 Route::get('/email/verify/{id}/{hash}', [VerificationController::class, 'verify'])->name('verification.verify');
