@@ -87,7 +87,7 @@ class VerificationController extends Controller
             'otp_expires_at' => now()->addMinutes(10),
         ]);
 
-        Mail::to($user->email)->send(new SendOtpMail($otp));
+        Mail::to($user->email)->queue(new SendOtpMail($otp));
 
         return response()->json(['message' => 'New OTP sent']);
     }

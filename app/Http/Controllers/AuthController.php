@@ -52,7 +52,9 @@ class AuthController extends Controller
         ]);
 
         // ইমেইল পাঠানো
-        Mail::to($user->email)->send(new SendOtpMail($otp));
+        //Mail::to($user->email)->send(new SendOtpMail($otp));
+        Mail::to($user->email)->queue(new SendOtpMail($otp));
+
 
         return response()->json([
             'success' => true,
@@ -119,10 +121,13 @@ class AuthController extends Controller
         ]);
 
         // 🔹 OTP ইমেইল পাঠাও
-        Mail::raw("Your login OTP is: {$otp}", function ($message) use ($user) {
-            $message->to($user->email)
-                ->subject('Your Login OTP');
-        });
+        // Mail::raw("Your login OTP is: {$otp}", function ($message) use ($user) {
+        //     $message->to($user->email)
+        //         ->subject('Your Login OTP');
+        // });
+
+        Mail::to($user->email)->queue(new SendOtpMail($otp));
+
 
         return response()->json([
             'status' => 200,
