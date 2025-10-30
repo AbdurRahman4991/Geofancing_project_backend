@@ -6,6 +6,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\VerificationController;
 use App\Http\Controllers\ForgotPasswordController;
 use App\Http\Controllers\ResetPasswordController;
+use App\Http\Controllers\Attendance\AttendanceController;
 
 // Route::get('/user', function (Request $request) {
 //     return $request->user();
@@ -24,4 +25,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/email/resend', [VerificationController::class, 'resend']);
     Route::get('/user', [AuthController::class, 'user']);
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::post('/chekin', [AttendanceController::class, 'checkIn']);
+    Route::post('/chekin-out', [AttendanceController::class, 'checkOut']);
+    
 });

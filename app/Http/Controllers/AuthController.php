@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\User;
+use App\Models\Employee;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Validation\ValidationException;
@@ -34,107 +35,128 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $data = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:8|confirmed',
+            //'name' => 'required|string|max:255',
+            //'email' => 'required|email',            
+              'employee_id' => ['required', 'string', 'unique:users,employee_id'],
+              'phone' => ['required', 'string', 'min:11'],
+            //'password' => 'required|string|min:8|confirmed',
         ]);
 
-        $data['password'] = bcrypt($data['password']);
+        $exists = Employee::where('employee_id', $data['employee_id'])
+                    ->where('phone', $data['phone'])
+                    ->exists();
+
+        if (!$exists) {
+            throw ValidationException::withMessages([
+                'employee_id' => ['Invalid employee ID or phone number combination.'],
+            ]);
+        }
+
+       // $data['password'] = bcrypt($data['password']);
 
         $user = User::create($data);
 
         // OTP তৈরি
-        $otp = rand(100000, 999999);
+        // $otp = rand(100000, 999999);
 
-        $user->update([
-            'otp' => $otp,
-            'otp_expires_at' => Carbon::now()->addMinutes(10),
-        ]);
+        // $user->update([
+        //     'otp' => $otp,
+        //     'otp_expires_at' => Carbon::now()->addMinutes(10),
+        // ]);
 
         // ইমেইল পাঠানো
-        //Mail::to($user->email)->send(new SendOtpMail($otp));
-        Mail::to($user->email)->queue(new SendOtpMail($otp));
+       
+       // Mail::to($user->email)->queue(new SendOtpMail($otp));
 
 
         return response()->json([
-            'success' => true,
-            'message' => 'Registration successful. OTP has been sent to your email.',
+            'status' => 200,
+            'message' => 'Registration successful.',
             'email' => $user->email
-        ], 201);
+        ], 200);
+    }
+
+    public function login(Request $request)
+    {
+        $request->validate([
+            'employee_id' => 'required|string',
+            'phone'       => 'required|string',
+            'device_id'   => 'required|string',
+            'latitude'    => 'required|string',
+            'longitude'   => 'required|string',
+        ]);
+
+        $user = User::where('employee_id', $request->employee_id)
+                    ->where('phone', $request->phone)
+                    ->first();
+
+        if (!$user) {
+            throw ValidationException::withMessages([
+                'employee_id' => ['The provided credentials are incorrect.']
+            ]);
+        }
+        
+        Auth::login($user);
+        
+        $user->tokens()->delete();
+
+        $token = $user->createToken('api-token')->plainTextToken;
+    
+        $user->update([
+            'device_id' => $request->device_id,
+            'latitude'  => $request->latitude,
+            'longitude' => $request->longitude,
+            // 'otp' => $otp,
+            // 'otp_expires_at' => Carbon::now()->addMinutes(5),
+        ]);
+
+        return response()->json([
+            'status'       => 200,
+            'access_token' => $token,
+            'token_type'   => 'Bearer',
+            'user'         => $user,
+        ]);
     }
 
     // public function login(Request $request)
     // {
     //     $request->validate([
-    //         'email' => 'required|email',
+    //         'email'    => 'required|email',
     //         'password' => 'required|string',
+            
     //     ]);
 
-    //     if (!Auth::attempt($request->only('email', 'password'))) {
+    //     // ইউজার আছে কিনা চেক করো
+    //     $user = User::where('email', $request->email)->first();
+
+    //     if (!$user || !Auth::attempt($request->only('email', 'password'))) {
     //         throw ValidationException::withMessages([
-    //             'email' => ['The provided credentials are incorrect.']
+    //             'email' => ['The provided credentials are incorrect.'],
     //         ]);
     //     }
-
-    //     $user = Auth::user();
 
     //     if (!$user->hasVerifiedEmail()) {
     //         return response()->json(['message' => 'Email not verified.'], 403);
     //     }
 
-    //     $token = $user->createToken('api-token')->plainTextToken;
+    //     // 🔹 Random 6-digit OTP তৈরি করো
+    //     $otp = rand(100000, 999999);
+
+    //     // 🔹 OTP সংরক্ষণ করো (এখানে otp_expires_at সময় দেওয়া হলো 5 মিনিট)
+    //     $user->update([
+    //         'otp' => $otp,
+    //         'otp_expires_at' => Carbon::now()->addMinutes(5),
+    //     ]);
+
+    //     Mail::to($user->email)->queue(new SendOtpMail($otp));
+
 
     //     return response()->json([
-    //         'access_token' => $token,
-    //         'token_type' => 'Bearer',
-    //         'user' => $user,
+    //         'status' => 200,
+    //         'message' => 'OTP sent successfully to your email.',
+    //         'email' => $user->email,
     //     ]);
     // }
-
-    public function login(Request $request)
-    {
-        $request->validate([
-            'email'    => 'required|email',
-            'password' => 'required|string',
-        ]);
-
-        // ইউজার আছে কিনা চেক করো
-        $user = User::where('email', $request->email)->first();
-
-        if (!$user || !Auth::attempt($request->only('email', 'password'))) {
-            throw ValidationException::withMessages([
-                'email' => ['The provided credentials are incorrect.'],
-            ]);
-        }
-
-        if (!$user->hasVerifiedEmail()) {
-            return response()->json(['message' => 'Email not verified.'], 403);
-        }
-
-        // 🔹 Random 6-digit OTP তৈরি করো
-        $otp = rand(100000, 999999);
-
-        // 🔹 OTP সংরক্ষণ করো (এখানে otp_expires_at সময় দেওয়া হলো 5 মিনিট)
-        $user->update([
-            'otp' => $otp,
-            'otp_expires_at' => Carbon::now()->addMinutes(5),
-        ]);
-
-        // 🔹 OTP ইমেইল পাঠাও
-        // Mail::raw("Your login OTP is: {$otp}", function ($message) use ($user) {
-        //     $message->to($user->email)
-        //         ->subject('Your Login OTP');
-        // });
-
-        Mail::to($user->email)->queue(new SendOtpMail($otp));
-
-
-        return response()->json([
-            'status' => 200,
-            'message' => 'OTP sent successfully to your email.',
-            'email' => $user->email,
-        ]);
-    }
 
     // Step 2: Verify OTP and complete login
     public function verifyOtpLogin(Request $request)
@@ -174,9 +196,20 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        $user = $request->user();
 
-        return response()->json(['message' => 'Logged out successfully']);
+        $user->currentAccessToken()->delete();
+
+        $user->update([
+            'device_id' => null,
+            'latitude'  => null,
+            'longitude' => null,
+        ]);
+
+        return response()->json([
+            'status'  => 200,
+            'message' => 'Logout successful',
+        ]);
     }
 
     public function user(Request $request)
