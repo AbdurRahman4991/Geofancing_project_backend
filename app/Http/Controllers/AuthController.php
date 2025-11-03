@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Employee;
+use App\Models\Geofence;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Validation\ValidationException;
@@ -90,11 +91,17 @@ class AuthController extends Controller
                     ->where('phone', $request->phone)
                     ->first();
 
+
         if (!$user) {
             throw ValidationException::withMessages([
                 'employee_id' => ['The provided credentials are incorrect.']
             ]);
         }
+
+        $userId = $user->id;
+        $userGeoFancing = Geofence::where('user_id', $userId)->select('latitude','longitude','radius')->get();
+
+
         
         Auth::login($user);
         
@@ -113,8 +120,9 @@ class AuthController extends Controller
         return response()->json([
             'status'       => 200,
             'access_token' => $token,
-            'token_type'   => 'Bearer',
+            'token_type'   => 'Bearer',            
             'user'         => $user,
+            'geofancing'   => $userGeoFancing,
         ]);
     }
 

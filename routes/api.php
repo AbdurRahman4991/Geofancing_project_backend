@@ -25,7 +25,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/email/resend', [VerificationController::class, 'resend']);
     Route::get('/user', [AuthController::class, 'user']);
     Route::post('/logout', [AuthController::class, 'logout']);
-    Route::post('/chekin', [AttendanceController::class, 'checkIn']);
-    Route::post('/chekin-out', [AttendanceController::class, 'checkOut']);
+    Route::post('/check-in', [AttendanceController::class, 'checkIn']);
+    Route::post('/check-out', [AttendanceController::class, 'checkOut']);
+    Route::get('/attendance/history', [AttendanceController::class, 'history']);
     
 });
