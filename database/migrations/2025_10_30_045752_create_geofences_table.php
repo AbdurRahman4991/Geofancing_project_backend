@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('geofences', function (Blueprint $table) {
             $table->id();
-            $table->string('compony_name'); // যেমন: Head Office, Uttara Zone, Mirpur Area
-            $table->string('user_id'); // যেমন: Head Office, Uttara Zone, Mirpur Area
+            $table->integer('company_id'); // যেমন: Head Office, Uttara Zone, Mirpur Area
+            $table->integer('user_id'); // যেমন: Head Office, Uttara Zone, Mirpur Area
             $table->decimal('latitude', 10, 7);
             $table->decimal('longitude', 10, 7);
             $table->integer('radius')->default(500); // মিটারে এলাকা

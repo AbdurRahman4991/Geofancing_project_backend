@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Console\Scheduling\Schedule;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -17,3 +18,18 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         //
     })->create();
+
+
+    // 🕐 Laravel 12 style scheduler registration
+$app->booted(function () use ($app) {
+    $schedule = $app->make(Schedule::class);
+
+    // প্রতিদিন রাত ১১:৫৯ এ AutoAttendance কমান্ড চালাবে
+    $schedule->command('app:auto-attendance')->dailyAt('12:53');
+});
+
+
+return $app;
+
+
+    

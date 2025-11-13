@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('attendance_rules', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('user_id')->nullable();        
+            $table->unsignedBigInteger('company_id')->nullable();        
             $table->time('office_in_time')->nullable();
             $table->time('office_out_time')->nullable();
             $table->json('weekend_holidays')->nullable();
