@@ -11,17 +11,20 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('companies', function (Blueprint $table) {
-            $table->string('avatar')->nullable();
+        Schema::table('employees', function (Blueprint $table) {
+            $table->string('email')->nullable();
+            $table->date('dob')->nullable();
+            $table->string('section_info')->nullable();
         });
     }
+
 
     /**
      * Reverse the migrations.
      */
     public function down(): void
     {
-        Schema::table('companies', function (Blueprint $table) {
+        Schema::table('employees', function (Blueprint $table) {
             //
         });
     }

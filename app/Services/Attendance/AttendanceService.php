@@ -9,6 +9,7 @@ use App\Models\Employee;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class AttendanceService
 {
@@ -29,6 +30,7 @@ class AttendanceService
         $attendanceRule = AttendanceRule::where('user_id', $user->id)->first();
 
         if (!$attendanceRule) {
+            
             $employee = Employee::where('employee_id', $user->employee_id)->first();
 
             if ($employee) {
@@ -36,6 +38,7 @@ class AttendanceService
                                                 ->whereNull('user_id')
                                                 ->first();
             }
+            return ['success' => false, 'message' => 'Attendance rule not found!'];
         }
 
         // $attendanceRule = AttendanceRule::where('user_id', $user->id)->first() ?? AttendanceRule::whereNull('user_id')->first();
@@ -95,7 +98,7 @@ class AttendanceService
      * 🔴 Handle Employee Check-Out
      */
     public function checkOut($data)
-    {
+    {        
         $user = Auth::user();
 
         $attendance = Attendance::where('user_id', $user->id)

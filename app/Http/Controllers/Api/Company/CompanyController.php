@@ -16,6 +16,9 @@ class CompanyController extends Controller
 
     public function index(Request $request)
     {
+    if (!$request->user() || !$request->user()->can('company.create')) {
+        return response()->json(['message' => 'Not allowed'], 403);
+    }
         try {
             $companies = $this->companyService->all($request);
 

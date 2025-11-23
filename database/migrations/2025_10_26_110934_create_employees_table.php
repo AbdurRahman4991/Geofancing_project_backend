@@ -11,13 +11,33 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('employees', function (Blueprint $table) {
-            $table->id();
-            $table->string('employee_id');
-            $table->foreignId('company_id')->constrained('companies')->onDelete('cascade');
-            $table->string('phone');            
-            $table->timestamps();
-        });
+       Schema::create('employees', function (Blueprint $table) {
+        $table->id();
+
+        $table->string('name');
+        $table->string('employee_id')->unique();       
+
+        // Relations
+        $table->foreignId('company_id')
+            ->constrained('companies')
+            ->onDelete('cascade');
+
+        // Basic Info
+        $table->string('phone');
+
+        // New fields you required
+        $table->string('status')->default('active');         // active, inactive, terminated
+        $table->string('nature_of_employment');             // permanent / contract / part-time
+        $table->string('department')->nullable();
+        $table->string('unit')->nullable();
+        $table->date('date_of_joining');
+        $table->string('division')->nullable();
+        $table->string('designation')->nullable();
+        $table->string('reporting_person')->nullable();
+
+        $table->timestamps();
+    });
+
     }
 
     /**
