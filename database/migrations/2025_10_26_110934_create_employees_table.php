@@ -15,12 +15,13 @@ return new class extends Migration
         $table->id();
 
         $table->string('name');
-        $table->string('employee_id')->unique();       
+        $table->string('employee_id')->unique();  
+        $table->string('company_id')->nullable();     
 
         // Relations
-        $table->foreignId('company_id')
-            ->constrained('companies')
-            ->onDelete('cascade');
+        // $table->foreignId('company_id')
+        //     ->constrained('companies')
+        //     ->onDelete('cascade');
 
         // Basic Info
         $table->string('phone');
