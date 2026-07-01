@@ -8,9 +8,19 @@ use Illuminate\Http\Request;
 
 class GeofeneService
 {
-     public function index()
+    //  public function index()
+    // {
+    //     return Geofence::with(['company:id,company_name', 'user:id,name'])
+    //         ->latest()
+    //         ->get();
+    // }
+    public function index()
     {
-        return Geofence::with(['company:id,company_name', 'user:id,name'])
+        return Geofence::with([
+                'company:id,company_name',
+                'user:id,name'
+            ])
+            ->where('user_id', auth()->id())
             ->latest()
             ->get();
     }

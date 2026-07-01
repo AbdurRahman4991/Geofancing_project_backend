@@ -58,8 +58,17 @@ class User extends Authenticatable implements MustVerifyEmail
         ];
     }
 
+    public function employee()
+    {
+        return $this->hasOne(
+            Employee::class,
+            'employee_id', // employees table column
+            'employee_id'  // users table column
+        );
+    }
+
     public function attendanceRules() {
-    return $this->hasMany(AttendanceRule::class);
+        return $this->hasMany(AttendanceRule::class);
     }
 
     public function attendances() {

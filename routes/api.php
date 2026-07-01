@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\Company\CompanyController;
 use App\Http\Controllers\Api\Employee\EmployeeController;
 use App\Http\Controllers\Api\Geofence\GeofenceController;
 use App\Http\Controllers\Attendance\AttendanceRuleController;
+use App\Http\Controllers\Api\Employee\EmployeeLocationController;
 
 
 // Route::get('/user', function (Request $request) {
@@ -34,11 +35,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/check-out', [AttendanceController::class, 'checkOut']);
     Route::get('/attendance/history', [AttendanceController::class, 'history']);
     Route::apiResource('companies', CompanyController::class);
+    Route::apiResource('employee-locations', EmployeeLocationController::class);
+    Route::apiResource('geofences', GeofenceController::class);
    
     
 });
 
  //Route::apiResource('companies', CompanyController::class);
  Route::apiResource('employees', EmployeeController::class);
- Route::apiResource('geofences', GeofenceController::class);
  Route::apiResource('attendance-rules', AttendanceRuleController::class);

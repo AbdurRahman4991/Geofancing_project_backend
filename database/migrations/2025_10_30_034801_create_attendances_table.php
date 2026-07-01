@@ -67,6 +67,7 @@ return new class extends Migration
             $table->dateTime('check_in_time')->nullable();
             $table->decimal('check_in_latitude', 10, 6)->nullable();
             $table->decimal('check_in_longitude', 10, 6)->nullable();
+            $table->foreignId('geofence_id')->nullable()->constrained();
             $table->dateTime('check_out_time')->nullable();
             $table->string('work_hour')->nullable();
             $table->string('late')->nullable();
