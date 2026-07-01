@@ -32,7 +32,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/check-in', [AttendanceController::class, 'checkIn']);
     Route::post('/check-out', [AttendanceController::class, 'checkOut']);
-    Route::get('/attendance/history', [AttendanceController::class, 'history']);
+    
     //Route::apiResource('companies', CompanyController::class);
    
     
@@ -42,3 +42,4 @@ Route::middleware('auth:sanctum')->group(function () {
  Route::apiResource('employees', EmployeeController::class);
  Route::apiResource('geofences', GeofenceController::class);
  Route::apiResource('attendance-rules', AttendanceRuleController::class);
+ Route::get('/attendance-history', [AttendanceController::class, 'history']);

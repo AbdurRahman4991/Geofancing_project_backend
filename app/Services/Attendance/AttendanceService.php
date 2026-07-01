@@ -169,8 +169,10 @@ class AttendanceService
 
     public function attendanceHistory(Request $request)
     {
+       
         $user = Auth::user();
-        $query = Attendance::where('user_id', $user->id);
+        // $query = Attendance::where('user_id', $user->id);
+        $query = Attendance::where('user_id', 1);
 
         if ($request->filled('year')) {
             $query->whereYear('created_at', $request->year);

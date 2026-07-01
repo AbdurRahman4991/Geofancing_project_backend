@@ -8,11 +8,31 @@ use Illuminate\Http\Request;
 
 class AttendanceRuleService
 {
-    public function index()
+public function index(Request $request)
     {
-        return AttendanceRule::with(['company:id,company_name', 'user:id,name'])
-            ->latest()
-            ->get();
+        $query = AttendanceRule::with([
+            'company:id,company_name',
+            'user:id,name'
+        ]);
+
+        // 🔍 Search
+        if ($request->filled('search')) {
+            $search = $request->search;
+
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('company', function ($qc) use ($search) {
+                    $qc->where('company_name', 'like', "%{$search}%");
+                })
+                ->orWhereHas('user', function ($qu) use ($search) {
+                    $qu->where('name', 'like', "%{$search}%");
+                });
+            });
+        }
+
+        // 📄 Pagination
+        return $query->latest()->paginate(
+            $request->get('per_page', 10)
+        );
     }
 
     public function store(Request $request)

@@ -19,9 +19,9 @@ return new class extends Migration
         $table->string('company_id')->nullable();     
 
         // Relations
-        // $table->foreignId('company_id')
-        //     ->constrained('companies')
-        //     ->onDelete('cascade');
+        $table->foreignId('company_id')
+            ->constrained('companies')
+            ->onDelete('cascade');
 
         // Basic Info
         $table->string('phone');

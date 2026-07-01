@@ -15,11 +15,9 @@ class EmployeeController extends Controller
         $this->employeeService = $employeeService;
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json([
-            'data' => $this->employeeService->index()
-        ]);
+        return $this->employeeService->index($request);
     }
 
     public function store(Request $request)
