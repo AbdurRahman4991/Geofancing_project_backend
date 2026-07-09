@@ -14,23 +14,24 @@ return new class extends Migration
        Schema::create('employees', function (Blueprint $table) {
         $table->id();
 
-        $table->string('name');
+        $table->string('name')->nullable();
         $table->string('employee_id')->unique();       
 
         // Relations
-        $table->foreignId('company_id')
-            ->constrained('companies')
-            ->onDelete('cascade');
+        // $table->foreignId('company_id')
+        //     ->constrained('companies')
+        //     ->onDelete('cascade');
+        $table->integer('company_id');
 
         // Basic Info
-        $table->string('phone');
+        $table->string('phone')->nullable();
 
         // New fields you required
         $table->string('status')->default('active');         // active, inactive, terminated
-        $table->string('nature_of_employment');             // permanent / contract / part-time
+        $table->string('nature_of_employment')->nullable();             // permanent / contract / part-time
         $table->string('department')->nullable();
         $table->string('unit')->nullable();
-        $table->date('date_of_joining');
+        $table->date('date_of_joining')->nullable();
         $table->string('division')->nullable();
         $table->string('designation')->nullable();
         $table->string('reporting_person')->nullable();

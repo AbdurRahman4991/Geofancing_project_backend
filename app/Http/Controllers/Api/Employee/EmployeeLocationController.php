@@ -5,16 +5,60 @@ namespace App\Http\Controllers\Api\Employee;
 use App\Http\Controllers\Controller;
 use App\Models\EmployeeLocation;
 use Illuminate\Http\Request;
-
+use Illuminate\Support\Facades\Cache;
 
 class EmployeeLocationController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+       
+    public function index(Request $request)
     {
-        return response()->json(EmployeeLocation::latest()->get());
+        $perPage = $request->per_page ?? 20;
+
+        $cacheKey = 'employee_locations_' . md5(json_encode($request->all()));
+
+        return Cache::remember($cacheKey, now()->addMinutes(5), function () use ($request, $perPage) {
+
+            $query = EmployeeLocation::with([
+                'employee:id,name,employee_id',
+            ]);
+
+            // Employee Filter
+            if ($request->filled('employee_id')) {
+                $query->where('employee_id', $request->employee_id);
+            }
+
+            // Search by Employee Name / Employee ID
+            if ($request->filled('search')) {
+                $search = $request->search;
+
+                $query->whereHas('employee', function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('employee_id', 'like', "%{$search}%");
+                });
+            }
+
+            // Single Date Filter
+            if ($request->filled('date')) {
+                $query->whereDate('created_at', $request->date);
+            }
+
+            // From Date
+            if ($request->filled('from_date')) {
+                $query->whereDate('created_at', '>=', $request->from_date);
+            }
+
+            // To Date
+            if ($request->filled('to_date')) {
+                $query->whereDate('created_at', '<=', $request->to_date);
+            }
+
+            return $query
+                ->latest()
+                ->paginate($perPage);
+        });
     }
 
     /**
@@ -39,9 +83,9 @@ class EmployeeLocationController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show($id)
     {
-        $location = EmployeeLocation::findOrFail($id);
+        $location = EmployeeLocation::with('employee')->findOrFail($id);
 
         return response()->json($location);
     }

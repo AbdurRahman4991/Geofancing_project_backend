@@ -8,21 +8,74 @@ use Illuminate\Http\Request;
 
 class GeofeneService
 {
-    //  public function index()
+    // public function index(Request $request)
     // {
-    //     return Geofence::with(['company:id,company_name', 'user:id,name'])
-    //         ->latest()
-    //         ->get();
+
+    //     $query = Geofence::with([
+    //         'company:id,company_name',
+    //         'user:id,name,employee_id',
+    //         'user.employee:id,name,employee_id',
+    //     ]);
+
+    //     if (auth()->user()->hasRole('super-admin')) {
+
+    //         // Admin এর জন্য Filter
+    //         if ($request->filled('user_id')) {
+    //             $query->where('user_id', $request->user_id);
+    //         }
+
+    //         // if ($request->filled('company_id')) {
+    //         //     $query->where('company_id', $request->company_id);
+    //         // }
+
+    //         return response()->json(
+    //             $query->latest()->paginate($request->per_page ?? 10)
+    //         );
+    //     }
+
+    //     // Employee শুধুমাত্র নিজের Geofence দেখবে
+    //     return response()->json(
+    //         $query->where('user_id', auth()->id())
+    //             ->latest()
+    //             ->get()
+    //     );
     // }
-    public function index()
+    public function index(Request $request)
     {
-        return Geofence::with([
-                'company:id,company_name',
-                'user:id,name'
-            ])
-            ->where('user_id', auth()->id())
-            ->latest()
-            ->get();
+        $query = Geofence::with([
+            'company:id,company_name',
+            'user:id,name,employee_id',
+            'user.employee:id,name,employee_id',
+        ]);
+
+        if (auth()->user()->hasRole('super-admin')) {
+
+            // User Filter
+            if ($request->filled('user_id')) {
+                $query->where('user_id', $request->user_id);
+            }
+
+            // Name / Employee ID Search
+            if ($request->filled('search')) {
+                $search = $request->search;
+
+                $query->whereHas('user', function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('employee_id', 'like', "%{$search}%");
+                });
+            }
+
+            return response()->json(
+                $query->latest()->paginate($request->per_page ?? 10)
+            );
+        }
+
+        // Employee শুধুমাত্র নিজের Geofence দেখবে
+        return response()->json(
+            $query->where('user_id', auth()->id())
+                ->latest()
+                ->get()
+        );
     }
 
     public function store(Request $request)
@@ -30,6 +83,7 @@ class GeofeneService
         $geofence = Geofence::create($request->only([
             'company_id',
             'user_id',
+            'firm_name',
             'latitude',
             'longitude',
             'radius',
@@ -54,6 +108,7 @@ class GeofeneService
         $geofence->update($request->only([
             'company_id',
             'user_id',
+            'firm_name',
             'latitude',
             'longitude',
             'radius',

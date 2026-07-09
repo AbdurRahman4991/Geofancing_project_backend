@@ -9,6 +9,7 @@ class Geofence extends Model
         protected $fillable = [
         'company_id',
         'user_id',
+        'firm_name',
         'latitude',
         'longitude',
         'radius',

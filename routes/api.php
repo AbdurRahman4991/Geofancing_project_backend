@@ -14,13 +14,9 @@ use App\Http\Controllers\Attendance\AttendanceRuleController;
 use App\Http\Controllers\Api\Employee\EmployeeLocationController;
 
 
-// Route::get('/user', function (Request $request) {
-//     return $request->user();
-// })->middleware('auth:sanctum');
-
-
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/admin-login', [AuthController::class, 'adminLogin']);
 Route::post('/verify-otp-login', [AuthController::class, 'verifyOtpLogin']);
 Route::post('/password/forgot', [ForgotPasswordController::class, 'sendForgetOtp']);
 Route::post('/reset-password', [ResetPasswordController::class, 'resetPassword']);
@@ -36,11 +32,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/attendance/history', [AttendanceController::class, 'history']);
     Route::apiResource('companies', CompanyController::class);
     Route::apiResource('employee-locations', EmployeeLocationController::class);
-    Route::apiResource('geofences', GeofenceController::class);
-   
+    Route::apiResource('geofences', GeofenceController::class);    
+    Route::apiResource('employees', EmployeeController::class);
+    Route::post('employees/sync', [EmployeeController::class, 'syncEmployees']);   
     
 });
 
  //Route::apiResource('companies', CompanyController::class);
- Route::apiResource('employees', EmployeeController::class);
- Route::apiResource('attendance-rules', AttendanceRuleController::class);
+ //Route::apiResource('attendance-rules', AttendanceRuleController::class);

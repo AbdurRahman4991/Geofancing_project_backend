@@ -130,7 +130,42 @@ class AuthController extends Controller
         ]);
     }
 
-    // public function login(Request $request)
+    public function adminLogin(Request $request)
+{
+    $request->validate([
+        'email'    => 'required|email',
+        'password' => 'required|string',
+    ]);
+
+    if (!Auth::attempt($request->only('email', 'password'))) {
+        throw ValidationException::withMessages([
+            'email' => ['The provided credentials are incorrect.'],
+        ]);
+    }
+
+    // Login User
+    $user = Auth::user();
+
+    // আগের token delete করতে চাইলে
+    $user->tokens()->delete();
+
+    // নতুন token তৈরি
+    $token = $user->createToken('admin-token')->plainTextToken;
+
+    return response()->json([
+        'status' => true,
+        'message' => 'Login successful.',
+        'token' => $token,
+        'token_type' => 'Bearer',
+        'user' => [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+        ]
+    ]);
+}
+
+    // public function adminLogin(Request $request)
     // {
     //     $request->validate([
     //         'email'    => 'required|email',

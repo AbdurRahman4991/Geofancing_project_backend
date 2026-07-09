@@ -15,24 +15,23 @@ class GeofenceController extends Controller
         $this->service = $service;
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $data = $this->service->index();
-        return response()->json($data);
+        return $this->service->index($request);
     }
-
     public function store(Request $request)
     {
         $request->validate([
             'company_id' => 'required|integer',
             'user_id' => 'required|integer',
+            'firm_name' => 'required|string',
             'latitude' => 'required|numeric',
             'longitude' => 'required|numeric',
             'radius' => 'required|integer|min:1',
         ]);
 
         $geofence = $this->service->store($request);
-        return response()->json(['message' => 'Geofence created successfully', 'data' => $geofence]);
+        return response()->json(['message' => 'Location created successfully', 'data' => $geofence]);
     }
 
     public function show($id)
@@ -46,18 +45,19 @@ class GeofenceController extends Controller
         $request->validate([
             'company_id' => 'sometimes|integer|max:255',
             'user_id' => 'sometimes|integer',
+            'firm_name' => 'required|string',
             'latitude' => 'sometimes|numeric',
             'longitude' => 'sometimes|numeric',
             'radius' => 'sometimes|integer|min:1',
         ]);
 
         $geofence = $this->service->update($request, $id);
-        return response()->json(['message' => 'Geofence updated successfully', 'data' => $geofence]);
+        return response()->json(['message' => 'Location updated successfully', 'data' => $geofence]);
     }
 
     public function destroy($id)
     {
         $this->service->destroy($id);
-        return response()->json(['message' => 'Geofence deleted successfully']);
+        return response()->json(['message' => 'Location deleted successfully']);
     }
 }
