@@ -8,38 +8,6 @@ use Illuminate\Http\Request;
 
 class GeofeneService
 {
-    // public function index(Request $request)
-    // {
-
-    //     $query = Geofence::with([
-    //         'company:id,company_name',
-    //         'user:id,name,employee_id',
-    //         'user.employee:id,name,employee_id',
-    //     ]);
-
-    //     if (auth()->user()->hasRole('super-admin')) {
-
-    //         // Admin এর জন্য Filter
-    //         if ($request->filled('user_id')) {
-    //             $query->where('user_id', $request->user_id);
-    //         }
-
-    //         // if ($request->filled('company_id')) {
-    //         //     $query->where('company_id', $request->company_id);
-    //         // }
-
-    //         return response()->json(
-    //             $query->latest()->paginate($request->per_page ?? 10)
-    //         );
-    //     }
-
-    //     // Employee শুধুমাত্র নিজের Geofence দেখবে
-    //     return response()->json(
-    //         $query->where('user_id', auth()->id())
-    //             ->latest()
-    //             ->get()
-    //     );
-    // }
     public function index(Request $request)
     {
         $query = Geofence::with([
@@ -89,6 +57,10 @@ class GeofeneService
             'radius',
         ]));
 
+        if ($request->hasFile('image')) {
+            $geofence->uploadImage($request->file('image'));
+        }
+
         return $geofence->load([
             'company:id,company_name',
             'user:id,name',
@@ -113,6 +85,10 @@ class GeofeneService
             'longitude',
             'radius',
         ]));
+        
+        if ($request->hasFile('image')) {
+            $geofence->uploadImage($request->file('image'));
+        }
 
         return $geofence->fresh([
             'company:id,company_name',

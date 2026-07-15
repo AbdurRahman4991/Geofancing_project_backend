@@ -103,7 +103,7 @@ class AuthController extends Controller
         }
 
         $userId = $user->id;
-        $userGeoFancing = Geofence::where('user_id', $userId)->select('latitude','longitude','radius')->get();
+        $userGeoFancing = Geofence::where('user_id', $userId)->select('latitude','longitude','radius','firm_name')->get();
 
 
         
