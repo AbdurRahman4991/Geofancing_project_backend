@@ -3,34 +3,75 @@
 
 namespace App\Services\Employee;
 
+use Illuminate\Support\Facades\Http;
 use App\Models\Employee;
 use Illuminate\Http\Request;
-use App\Http\Requests\EmployRequest;
+use Illuminate\Support\Facades\Cache;
 
 class EmployeeService
 {
-    // ✅ সব এমপ্লয়ি লিস্ট
-    // public function index()
+    
+    // public function index(Request $request)
     // {
-    //     return Employee::with(['company:id,company_name'])->latest()->get();
+    //     $query = Employee::with(['company:id,company_name']);
+
+    //     // Search by Name, Employee ID, or Phone
+    //     if ($request->filled('search')) {
+    //         $search = $request->search;
+
+    //         $query->where(function ($q) use ($search) {
+    //             $q->where('name', 'like', "%{$search}%")
+    //             ->orWhere('employee_id', 'like', "%{$search}%")
+    //             ->orWhere('phone', 'like', "%{$search}%");
+    //         });
+    //     }
+
+    //     // Filter by Department
+    //     if ($request->filled('department')) {
+    //         $query->where('department', 'like', '%' . $request->department . '%');
+    //     }
+
+    //     // Latest First
+    //     $query->latest();
+
+    //     // Pagination
+    //     $employees = $query->paginate($request->per_page ?? 10);
+
+    //     return response()->json($employees);
     // }
+
+
     public function index(Request $request)
-{
-    $query = Employee::with(['company:id,company_name']); // relationship
+    {
+        $cacheKey = 'employees_' . md5(json_encode([
+            'search' => $request->search,
+            'department' => $request->department,
+            'page' => $request->page,
+            'per_page' => $request->per_page,
+        ]));
 
-    // 🔍 Search
-    if ($request->filled('search')) {
-        $search = $request->search;
+        $employees = Cache::remember($cacheKey, now()->addMinutes(10), function () use ($request) {
 
-        $query->where(function ($q) use ($search) {
-            $q->where('name', 'like', "%{$search}%")
-                ->orWhere('email', 'like', "%{$search}%")
-                ->orWhere('phone', 'like', "%{$search}%")
-                ->orWhere('designation', 'like', "%{$search}%")
-                ->orWhereHas('company', function ($c) use ($search) {
-                    $c->where('company_name', 'like', "%{$search}%");
+            $query = Employee::with(['company:id,company_name']);
+
+            if ($request->filled('search')) {
+                $search = $request->search;
+
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('employee_id', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%");
                 });
+            }
+
+            if ($request->filled('department')) {
+                $query->where('department', 'like', '%' . $request->department . '%');
+            }
+
+            return $query->latest()->paginate($request->per_page ?? 10);
         });
+
+        return response()->json($employees);
     }
 
     // ↕ Sorting
@@ -77,6 +118,62 @@ class EmployeeService
         ]);
 
         return Employee::create($data);
+    }
+  
+
+    public function syncEmployees()
+    {
+        $response = Http::get('http://192.168.20.22:8001/api/Employee/GetEmployeeList');
+
+        if (!$response->successful()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch employee data.',
+            ], 500);
+        }
+
+        $employees = $response->json('data');
+
+        foreach ($employees as $item) {
+
+            Employee::updateOrCreate(
+                [
+                    // Unique Key
+                    'employee_id' => $item['employeeID'],
+                ],
+                [
+                    'name' => $item['name'],
+                    'company_id' => $item['buid'], // প্রয়োজনে mapping করতে হবে
+                    'phone' => $item['mobileNo'] ?? null,
+                    'status' => $item['isActive'] ? 1 : 0,
+
+                    'nature_of_employment' => null,
+
+                    'department' => $item['departmentName'],
+                    'unit' => $item['businessUnitName'],
+                    'date_of_joining' => $item['dateOfJoining'],
+
+                    'division' => $item['divisionName'],
+                    'designation' => $item['designation'],
+
+                    'reporting_person' => null,
+
+                    'email' => null,
+                    'dob' => null,
+
+                    'section_info' => trim($item['sectionName']),
+
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]
+            );
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Employees synchronized successfully.',
+            'total' => count($employees),
+        ]);
     }
 
     // ✅ নির্দিষ্ট এমপ্লয়ি দেখানো

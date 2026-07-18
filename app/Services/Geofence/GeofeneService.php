@@ -8,27 +8,42 @@ use Illuminate\Http\Request;
 
 class GeofeneService
 {
-    //  public function index()
-    // {
-    //     return Geofence::with(['company:id,company_name', 'user:id,name'])
-    //         ->latest()
-    //         ->get();
-    // }
     public function index(Request $request)
-{
-    $search = $request->input('search');
-    $perPage = $request->input('per_page', 10);
+    {
+        $query = Geofence::with([
+            'company:id,company_name',
+            'user:id,name,employee_id',
+            'user.employee:id,name,employee_id',
+        ]);
 
-    $query = Geofence::with(['company:id,company_name', 'user:id,name']);
+        if (auth()->user()->hasRole('super-admin')) {
 
-    // Search
-    if ($search) {
-        $query->where(function ($q) use ($search) {
-            $q->where('name', 'like', "%{$search}%")
-                ->orWhere('address', 'like', "%{$search}%")
-                ->orWhere('latitude', 'like', "%{$search}%")
-                ->orWhere('longitude', 'like', "%{$search}%");
-        });
+            // User Filter
+            if ($request->filled('user_id')) {
+                $query->where('user_id', $request->user_id);
+            }
+
+            // Name / Employee ID Search
+            if ($request->filled('search')) {
+                $search = $request->search;
+
+                $query->whereHas('user', function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('employee_id', 'like', "%{$search}%");
+                });
+            }
+
+            return response()->json(
+                $query->latest()->paginate($request->per_page ?? 10)
+            );
+        }
+
+        // Employee শুধুমাত্র নিজের Geofence দেখবে
+        return response()->json(
+            $query->where('user_id', auth()->id())
+                ->latest()
+                ->get()
+        );
     }
 
     // Pagination
@@ -49,10 +64,15 @@ class GeofeneService
         $geofence = Geofence::create($request->only([
             'company_id',
             'user_id',
+            'firm_name',
             'latitude',
             'longitude',
             'radius',
         ]));
+
+        if ($request->hasFile('image')) {
+            $geofence->uploadImage($request->file('image'));
+        }
 
         return $geofence->load([
             'company:id,company_name',
@@ -73,10 +93,15 @@ class GeofeneService
         $geofence->update($request->only([
             'company_id',
             'user_id',
+            'firm_name',
             'latitude',
             'longitude',
             'radius',
         ]));
+        
+        if ($request->hasFile('image')) {
+            $geofence->uploadImage($request->file('image'));
+        }
 
         return $geofence->fresh([
             'company:id,company_name',

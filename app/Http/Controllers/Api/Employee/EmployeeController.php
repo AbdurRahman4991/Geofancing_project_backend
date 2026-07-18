@@ -20,10 +20,20 @@ class EmployeeController extends Controller
         return $this->employeeService->index($request);
     }
 
-    public function store(Request $request)
+    // public function store(Request $request)
+    // {
+    //     $employee = $this->employeeService->store($request);
+    //     return response()->json(['message' => 'Employee created successfully', 'data' => $employee]);
+    // }
+    public function syncEmployees()
     {
-        $employee = $this->employeeService->store($request);
-        return response()->json(['message' => 'Employee created successfully', 'data' => $employee]);
+        $result = $this->employeeService->syncEmployees();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Employees synchronized successfully.',
+            'data' => $result,
+        ]);
     }
 
     public function show($id)
