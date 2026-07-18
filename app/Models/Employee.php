@@ -28,4 +28,10 @@ class Employee extends Model
     {
         return $this->belongsTo(Company::class);
     }
+    // Employee.php
+
+    public function locations()
+    {
+        return $this->hasMany(EmployeeLocation::class);
+    }
 }

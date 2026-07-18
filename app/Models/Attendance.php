@@ -11,6 +11,7 @@ class Attendance extends Model
         'check_in_time',
         'check_in_latitude',
         'check_in_longitude',
+        'geofence_id',
         'check_out_time',
         'check_out_latitude',
         'check_out_longitude',

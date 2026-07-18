@@ -87,9 +87,13 @@ class AuthController extends Controller
             'longitude'   => 'required|string',
         ]);
 
-        $user = User::where('employee_id', $request->employee_id)
-                    ->where('phone', $request->phone)
-                    ->first();
+        // $user = User::with('employee')->where('employee_id', $request->employee_id)
+        //             ->where('phone', $request->phone)
+        //             ->first();
+        $user = User::with('employee')
+            ->where('employee_id', $request->employee_id)
+            ->where('phone', $request->phone)
+            ->first();
 
 
         if (!$user) {
