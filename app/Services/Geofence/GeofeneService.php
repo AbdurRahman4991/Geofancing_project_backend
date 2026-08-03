@@ -98,6 +98,19 @@ class GeofeneService
         return response()->json($geofences);
     }
 
+    // Pagination
+    $pagination = $query->latest()->paginate($perPage);
+
+    // Return same format as Company API
+    return [
+        "status" => 200,
+        "message" => "Geofence list retrieved successfully",
+        "data" => $pagination
+    ];
+}
+
+
+
     public function store(Request $request)
     {
         $geofence = Geofence::create($request->only([

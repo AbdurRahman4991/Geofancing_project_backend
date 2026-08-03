@@ -15,9 +15,22 @@ class GeofenceController extends Controller
         $this->service = $service;
     }
 
+<<<<<<< HEAD
+    // public function index(Request $request)
+    // {
+    //     $data = $this->service->index();
+    //     return response()->json($data);
+    // }
+        public function index(Request $request)
+    {
+        return response()->json(
+            $this->service->index($request)
+        );
+=======
     public function index(Request $request)
     {
         return $this->service->index($request);
+>>>>>>> c0454fec10bf427f2e3ba0015009267dfae8fafb
     }
     public function store(Request $request)
     {

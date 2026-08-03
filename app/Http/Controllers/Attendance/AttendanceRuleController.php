@@ -15,10 +15,17 @@ class AttendanceRuleController extends Controller
         $this->service = $service;
     }
 
-    public function index()
+    // public function index(Request $request)
+    // {
+    //     return response()->json($this->service->index());
+    // }
+    public function index(Request $request)
     {
-        return response()->json($this->service->index());
+        return response()->json(
+            $this->service->index($request)
+        );
     }
+
 
     public function store(Request $request)
     {

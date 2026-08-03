@@ -16,9 +16,9 @@ class CompanyController extends Controller
 
     public function index(Request $request)
     {
-    if (!$request->user() || !$request->user()->can('company.create')) {
-        return response()->json(['message' => 'Not allowed'], 403);
-    }
+    // if (!$request->user() || !$request->user()->can('company.create')) {
+    //     return response()->json(['message' => 'Not allowed'], 403);
+    // }
         try {
             $companies = $this->companyService->all($request);
 
@@ -83,25 +83,52 @@ class CompanyController extends Controller
             ], 404);
         }
     }
-
     public function update(Request $request, $id)
-    {
-        try {
-            $company = $this->companyService->update($request, $id);
+{
+    try {
+        $company = $this->companyService->update($request, $id);
 
-            return response()->json([
-                'status' => 200,
-                'message' => 'Company updated successfully',
-                'data' => $company,
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Failed to update company',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+        return response()->json([
+            'status' => 200,
+            'message' => 'Company updated successfully',
+            'data' => [
+                'id' => $company->id,
+                'company_name' => $company->company_name,
+                'email' => $company->email,
+                'phone' => $company->phone,
+                'address' => $company->address,
+                'avatar_url' => $company->getFirstMediaUrl('avatar'),
+            ]
+        ], 200);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Failed to update company',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
+
+
+    // public function update(Request $request, $id)
+    // {
+    //     try {
+    //         $company = $this->companyService->update($request, $id);
+
+    //         return response()->json([
+    //             'status' => 200,
+    //             'message' => 'Company updated successfully',
+    //             'data' => $company,
+    //         ], 200);
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'status' => false,
+    //             'message' => 'Failed to update company',
+    //             'error' => $e->getMessage(),
+    //         ], 500);
+    //     }
+    // }
 
     public function destroy($id)
     {

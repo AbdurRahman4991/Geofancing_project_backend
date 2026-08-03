@@ -74,7 +74,7 @@ class CompanyService
 
     public function update(Request $request, $id)
     {
-       
+      
         $company = Company::findOrFail($id);
 
         $company->update($request->only(['company_name', 'email', 'phone', 'address']));
