@@ -11,13 +11,13 @@ use Spatie\Permission\Models\Permission;
 class RoleController extends Controller
 {
     // Role List
-    public function index()
+    public function index(Request $request)
     {
-        $roles = Role::with('permissions')->get();
+        $roles = Role::select('id', 'name', 'guard_name')->get();
 
         return response()->json([
             'status' => true,
-            'data' => $roles
+            'data' => $roles,
         ]);
     }
 
