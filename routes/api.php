@@ -12,6 +12,8 @@ use App\Http\Controllers\Api\Employee\EmployeeController;
 use App\Http\Controllers\Api\Geofence\GeofenceController;
 use App\Http\Controllers\Attendance\AttendanceRuleController;
 use App\Http\Controllers\Api\Employee\EmployeeLocationController;
+use App\Http\Controllers\Api\RoleController;
+use App\Http\Controllers\Api\PermissionController;
 
 
 Route::post('/register', [AuthController::class, 'register']);
@@ -35,6 +37,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('geofences', GeofenceController::class);    
     Route::apiResource('employees', EmployeeController::class);
     Route::post('employees/sync', [EmployeeController::class, 'syncEmployees']);   
+
+    Route::get('/permissions', [PermissionController::class, 'index']);    
+    Route::apiResource('roles', RoleController::class);    
+    Route::post('/users/{user}/assign-role', [RoleController::class, 'assignRole']);
     
 });
 
