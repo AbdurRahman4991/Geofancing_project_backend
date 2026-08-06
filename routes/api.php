@@ -14,6 +14,7 @@ use App\Http\Controllers\Attendance\AttendanceRuleController;
 use App\Http\Controllers\Api\Employee\EmployeeLocationController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\PermissionController;
+use App\Http\Controllers\Api\UserController;
 
 
 Route::post('/register', [AuthController::class, 'register']);
@@ -25,7 +26,7 @@ Route::post('/reset-password', [ResetPasswordController::class, 'resetPassword']
 Route::get('/email/verify/{id}/{hash}', [VerificationController::class, 'verify'])->name('verification.verify');
 Route::post('/verify-otp', [VerificationController::class, 'verifyOtp']);
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware('auth:sanctum', 'throttle:api-auth')->group(function () {
     Route::post('/email/resend', [VerificationController::class, 'resend']);
     Route::get('/user', [AuthController::class, 'user']);
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -34,13 +35,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/attendance/history', [AttendanceController::class, 'history']);
     Route::apiResource('companies', CompanyController::class);
     Route::apiResource('employee-locations', EmployeeLocationController::class);
+    Route::get('/locations/history', [EmployeeLocationController::class, 'history']);
     Route::apiResource('geofences', GeofenceController::class);    
     Route::apiResource('employees', EmployeeController::class);
     Route::post('employees/sync', [EmployeeController::class, 'syncEmployees']);   
-
-    Route::get('/permissions', [PermissionController::class, 'index']);    
+    Route::apiResource('permissions', PermissionController::class);
+    Route::get('permission-groups', [PermissionController::class, 'grouped']);  
     Route::apiResource('roles', RoleController::class);    
     Route::post('/users/{user}/assign-role', [RoleController::class, 'assignRole']);
+    Route::get('/assign-role/users', [UserController::class, 'assignRoleUsers']);
+    Route::post('roles/{role}/assign-permission', [PermissionController::class, 'assignPermission']);
     
 });
 

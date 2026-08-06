@@ -49,64 +49,63 @@ class GeofeneService
     // }
 
 
-    public function index(Request $request)
-    {
-        $query = Geofence::with([
-            'company:id,company_name',
-            'user:id,name,employee_id',
-            'user.employee:id,name,employee_id',
-        ]);
+   public function index(Request $request)
+{
+    $query = Geofence::with([
+        'company:id,company_name',
+        'user:id,name,employee_id',
+        'user.employee:id,name,employee_id',
+    ]);
 
-        if (auth()->user()->hasRole('super-admin')) {
+    if (auth()->user()->hasRole('super-admin')) {
 
-            // আগের super-admin logic...
-            if ($request->filled('user_id')) {
-                $query->where('user_id', $request->user_id);
-            }
-
-            if ($request->filled('search')) {
-                $search = $request->search;
-
-                $query->whereHas('user', function ($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('employee_id', 'like', "%{$search}%");
-                });
-            }
-
-            return response()->json(
-                $query->latest()->paginate($request->per_page ?? 10)
-            );
+        if ($request->filled('user_id')) {
+            $query->where('user_id', $request->user_id);
         }
 
-        // Employee-এর geofence
-        $geofences = $query
-            ->where('user_id', auth()->id())
-            ->latest()
-            ->get();
+        if ($request->filled('search')) {
+            $search = $request->search;
 
-        // আজ যে geofence-এ check-in হয়েছে
-        $todayVisited = Attendance::where('user_id', auth()->id())
-            ->whereDate('check_in_time', today())
-            ->pluck('geofence_id')
-            ->toArray();
+            $query->whereHas('user.employee', function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('employee_id', 'like', "%{$search}%");
+            });
+        }
 
-        // checked যোগ করা
-        $geofences->each(function ($geofence) use ($todayVisited) {
-            $geofence->checked = in_array($geofence->id, $todayVisited);
-        });
+        $pagination = $query->latest()->paginate($request->per_page ?? 10);
 
-        return response()->json($geofences);
+        return response()->json([
+            "status" => 200,
+            "message" => "Geofence list retrieved successfully",
+            "data" => $pagination
+        ]);
     }
 
-    // Pagination
-    $pagination = $query->latest()->paginate($perPage);
+    $geofences = $query
+        ->where('user_id', auth()->id())
+        ->latest()
+        ->get();
 
-    // Return same format as Company API
-    return [
+    $todayVisited = Attendance::where('user_id', auth()->id())
+        ->whereDate('check_in_time', today())
+        ->pluck('geofence_id')
+        ->toArray();
+
+    $geofences->each(function ($geofence) use ($todayVisited) {
+        $geofence->checked = in_array($geofence->id, $todayVisited);
+    });
+
+    return response()->json([
         "status" => 200,
         "message" => "Geofence list retrieved successfully",
-        "data" => $pagination
-    ];
+        "data" => [
+            "current_page" => 1,
+            "data" => $geofences,
+            "total" => $geofences->count(),
+            "per_page" => $geofences->count(),
+            "last_page" => 1,
+        ]
+    ]);
 }
 
 

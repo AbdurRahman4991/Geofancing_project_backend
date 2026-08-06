@@ -123,4 +123,30 @@ class EmployeeLocationController extends Controller
             'message' => 'Location deleted successfully'
         ]);
     }
+
+    public function history(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'date' => 'nullable|date',
+        ]);
+
+        $date = $request->date ?? today()->toDateString();
+
+        $locations = EmployeeLocation::where('employee_id', $request->user_id)
+            ->whereDate('created_at', $date)
+            ->orderBy('created_at', 'asc')
+            ->get([
+                'id',
+                'latitude',
+                'longitude',
+                'created_at',
+            ]);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Location history retrieved successfully',
+            'data' => $locations,
+        ]);
+    }
 }

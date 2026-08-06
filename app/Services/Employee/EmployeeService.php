@@ -41,52 +41,51 @@ class EmployeeService
     // }
 
 
-    public function index(Request $request)
-    {
-        $cacheKey = 'employees_' . md5(json_encode([
-            'search' => $request->search,
-            'department' => $request->department,
-            'page' => $request->page,
-            'per_page' => $request->per_page,
-        ]));
+   public function index(Request $request)
+{
+    $cacheKey = 'employees_' . md5(json_encode([
+        'search'     => $request->search,
+        'department' => $request->department,
+        'page'       => $request->page,
+        'per_page'   => $request->per_page,
+        'orderBy'    => $request->orderBy,
+        'order'      => $request->order,
+    ]));
 
-        $employees = Cache::remember($cacheKey, now()->addMinutes(10), function () use ($request) {
+    $employees = Cache::remember($cacheKey, now()->addMinutes(10), function () use ($request) {
 
-            $query = Employee::with(['company:id,company_name']);
+        $query = Employee::with('company:id,company_name');
 
-            if ($request->filled('search')) {
-                $search = $request->search;
+        // Search
+        if ($request->filled('search')) {
+            $search = $request->search;
 
-                $query->where(function ($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('employee_id', 'like', "%{$search}%")
-                    ->orWhere('phone', 'like', "%{$search}%");
-                });
-            }
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('employee_id', 'like', "%{$search}%")
+                  ->orWhere('phone', 'like', "%{$search}%");
+            });
+        }
 
-            if ($request->filled('department')) {
-                $query->where('department', 'like', '%' . $request->department . '%');
-            }
+        // Department Filter
+        if ($request->filled('department')) {
+            $query->where('department', 'like', "%{$request->department}%");
+        }
 
-            return $query->latest()->paginate($request->per_page ?? 10);
-        });
+        // Sorting
+        $orderBy = $request->get('orderBy', 'id');
+        $order   = $request->get('order', 'desc');
 
-        return response()->json($employees);
-    }
+        $query->orderBy($orderBy, $order);
 
-    // ↕ Sorting
-    $orderBy = $request->get('orderBy', 'id');   // default column
-    $orderDir = $request->get('order', 'desc');  // default direction
-    $query->orderBy($orderBy, $orderDir);
-
-    // 📄 Pagination
-    $perPage = $request->get('limit', 10);
-    $employees = $query->paginate($perPage);
+        // Pagination
+        return $query->paginate($request->get('per_page', 10));
+    });
 
     return response()->json([
         'status'  => 200,
         'message' => 'Employee list retrieved successfully',
-        'data'    => $employees
+        'data'    => $employees,
     ]);
 }
 
