@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\EmployeeLocation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use App\Models\Employee;
 
 class EmployeeLocationController extends Controller
 {
@@ -124,16 +125,18 @@ class EmployeeLocationController extends Controller
         ]);
     }
 
+   
+
     public function history(Request $request)
     {
         $request->validate([
-            'user_id' => 'required|exists:users,id',
+            'employee_id' => 'required|exists:employees,id',
             'date' => 'nullable|date',
         ]);
 
         $date = $request->date ?? today()->toDateString();
 
-        $locations = EmployeeLocation::where('employee_id', $request->user_id)
+        $locations = EmployeeLocation::where('employee_id', $request->employee_id)
             ->whereDate('created_at', $date)
             ->orderBy('created_at', 'asc')
             ->get([

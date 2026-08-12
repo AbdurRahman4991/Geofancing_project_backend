@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\Employee\EmployeeController;
 use App\Http\Controllers\Api\Geofence\GeofenceController;
 use App\Http\Controllers\Attendance\AttendanceRuleController;
 use App\Http\Controllers\Api\Employee\EmployeeLocationController;
+use App\Http\Controllers\Api\Employee\EmployeeLocationEmployeeController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\UserController;
@@ -35,7 +36,7 @@ Route::middleware('auth:sanctum', 'throttle:api-auth')->group(function () {
     Route::get('/attendance/history', [AttendanceController::class, 'history']);
     Route::apiResource('companies', CompanyController::class);
     Route::apiResource('employee-locations', EmployeeLocationController::class);
-    Route::get('/locations/history', [EmployeeLocationController::class, 'history']);
+    Route::post('/locations/history', [EmployeeLocationController::class, 'history']);
     Route::apiResource('geofences', GeofenceController::class);    
     Route::apiResource('employees', EmployeeController::class);
     Route::post('employees/sync', [EmployeeController::class, 'syncEmployees']);   
@@ -45,6 +46,8 @@ Route::middleware('auth:sanctum', 'throttle:api-auth')->group(function () {
     Route::post('/users/{user}/assign-role', [RoleController::class, 'assignRole']);
     Route::get('/assign-role/users', [UserController::class, 'assignRoleUsers']);
     Route::post('roles/{role}/assign-permission', [PermissionController::class, 'assignPermission']);
+    Route::get('/locations/employees', [EmployeeLocationEmployeeController::class, 'employeesLocationEmployee']);
+    
     
 });
 
