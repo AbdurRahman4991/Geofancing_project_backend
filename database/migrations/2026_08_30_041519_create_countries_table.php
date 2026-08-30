@@ -11,8 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('geofences', function (Blueprint $table) {
-            $table->string('firm_name')->nullable();
+        Schema::create('countries', function (Blueprint $table) {
+            $table->id();
+            $table->string('name', 150);
+            $table->string('code', 10)->nullable()->unique();
+            $table->boolean('status')->default(true);
+            $table->timestamps();
         });
     }
 
@@ -21,8 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('geofences', function (Blueprint $table) {
-            //
-        });
+        Schema::dropIfExists('countries');
     }
 };

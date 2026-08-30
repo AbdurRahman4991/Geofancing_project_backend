@@ -17,6 +17,15 @@ use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\UserController;
 
+use App\Http\Controllers\Api\Hierarchy\CountryController;
+use App\Http\Controllers\Api\Hierarchy\RegionController;
+use App\Http\Controllers\Api\Hierarchy\ZoneController;
+use App\Http\Controllers\Api\Hierarchy\DivisionController;
+use App\Http\Controllers\Api\Hierarchy\DistrictController;
+use App\Http\Controllers\Api\Hierarchy\SubDistrictController;
+use App\Http\Controllers\Api\Hierarchy\TerritoryController;
+use App\Http\Controllers\Api\Hierarchy\AreaController;
+
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -47,6 +56,24 @@ Route::middleware('auth:sanctum', 'throttle:api-auth')->group(function () {
     Route::get('/assign-role/users', [UserController::class, 'assignRoleUsers']);
     Route::post('roles/{role}/assign-permission', [PermissionController::class, 'assignPermission']);
     Route::get('/locations/employees', [EmployeeLocationEmployeeController::class, 'employeesLocationEmployee']);
+
+    // Hierarchy //
+
+    Route::apiResource('countries', CountryController::class);
+
+    Route::apiResource('regions', RegionController::class);
+
+    Route::apiResource('zones', ZoneController::class);
+
+    Route::apiResource('divisions', DivisionController::class);
+
+    Route::apiResource('districts', DistrictController::class);
+
+    Route::apiResource('sub-districts', SubDistrictController::class);
+
+    Route::apiResource('territories', TerritoryController::class);
+
+    Route::apiResource('areas', AreaController::class);
     
     
 });

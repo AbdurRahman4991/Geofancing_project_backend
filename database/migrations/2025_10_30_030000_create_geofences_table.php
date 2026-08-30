@@ -13,6 +13,9 @@ return new class extends Migration
     {
         Schema::create('geofences', function (Blueprint $table) {
             $table->id();
+            // $table->foreignId('area_id')
+            // ->constrained('areas')
+            // ->cascadeOnDelete();
             $table->integer('company_id'); // যেমন: Head Office, Uttara Zone, Mirpur Area
             $table->integer('user_id'); // যেমন: Head Office, Uttara Zone, Mirpur Area
             $table->string('firm_name');

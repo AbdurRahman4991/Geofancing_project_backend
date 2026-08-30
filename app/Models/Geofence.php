@@ -41,6 +41,7 @@ class Geofence extends Model implements HasMedia
     use InteractsWithMedia;
 
     protected $fillable = [
+        //'area_id',
         'company_id',
         'user_id',
         'firm_name',
