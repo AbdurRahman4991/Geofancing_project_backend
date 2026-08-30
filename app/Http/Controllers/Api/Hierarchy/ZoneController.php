@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Controllers\Api\Hierarchy;
-
+use App\Http\Controllers\Controller;
 use App\Models\Zone;
 use Illuminate\Http\Request;
 

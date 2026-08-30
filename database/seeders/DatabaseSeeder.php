@@ -17,7 +17,9 @@ class DatabaseSeeder extends Seeder
             PermissionSeeder::class,
             RoleSeeder::class,
             AdminUserSeeder::class,
-            LocationSeeder::class,
+            BangladeshLocationSeeder::class,
+            TerritoryAreaSeeder::class,
+            GeofenceSeeder::class,
 
         ]);
     }

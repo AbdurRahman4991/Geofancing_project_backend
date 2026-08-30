@@ -74,9 +74,12 @@ Route::middleware('auth:sanctum', 'throttle:api-auth')->group(function () {
     Route::apiResource('territories', TerritoryController::class);
 
     Route::apiResource('areas', AreaController::class);
+
+    
     
     
 });
+
 
  //Route::apiResource('companies', CompanyController::class);
  //Route::apiResource('attendance-rules', AttendanceRuleController::class);
