@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('area_id')
             ->constrained('areas')
-            ->cascadeOnDelete();
+            ->onDelete('cascade');
             $table->foreignId('company_id')
             ->constrained('companies')
             ->cascadeOnDelete(); // যেমন: Head Office, Uttara Zone, Mirpur Area            

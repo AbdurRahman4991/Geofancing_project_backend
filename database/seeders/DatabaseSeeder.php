@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             AdminUserSeeder::class,
             BangladeshLocationSeeder::class,
             TerritoryAreaSeeder::class,
+            CompanySeeder::class,
             GeofenceSeeder::class,
 
         ]);

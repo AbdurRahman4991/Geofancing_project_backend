@@ -98,7 +98,7 @@ class RoleSeeder extends Seeder
 
         $territoryManager = Role::findByName('territory-manager');
         $areaOfficer = Role::findByName('area-officer');
-        $farmOfficer = Role::findByName('farm-officer');
+        //$farmOfficer = Role::findByName('farm-officer');
         $fieldEmployee = Role::findByName('field-employee');
 
         // $manager = Role::findByName('manager');
