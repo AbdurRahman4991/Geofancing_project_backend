@@ -18,10 +18,10 @@ return new class extends Migration
         $table->string('employee_id')->unique();       
 
         // Relations
-        // $table->foreignId('company_id')
-        //     ->constrained('companies')
-        //     ->onDelete('cascade');
-        $table->integer('company_id');
+        $table->foreignId('company_id')
+            ->constrained('companies')
+            ->onDelete('cascade');
+        //$table->integer('company_id');
 
         // Basic Info
         $table->string('phone')->nullable();
