@@ -16,7 +16,10 @@ return new class extends Migration
             $table->string('name')->nullable();
             $table->string('email')->nullable();
             $table->string('phone');
-            $table->string('employee_id')->unique();
+            //$table->string('employee_id')->unique();
+            $table->foreignId('employee_id')
+            ->constrained('employees')
+            ->onDelete('cascade');
             $table->string('device_id')->nullable();
             $table->string('otp')->nullable();
             $table->timestamp('otp_expires_at')->nullable();

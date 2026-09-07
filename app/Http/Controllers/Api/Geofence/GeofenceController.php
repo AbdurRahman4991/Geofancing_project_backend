@@ -23,7 +23,7 @@ class GeofenceController extends Controller
     {
         $request->validate([
             'company_id' => 'required|integer',
-            'user_id' => 'required|integer',
+            'area_id' => 'required|integer',
             'firm_name' => 'required|string',
             'latitude' => 'required|numeric',
             'longitude' => 'required|numeric',
@@ -44,7 +44,7 @@ class GeofenceController extends Controller
     {
         $request->validate([
             'company_id' => 'sometimes|integer|max:255',
-            'user_id' => 'sometimes|integer',
+            'area_id' => 'sometimes|integer',
             'firm_name' => 'required|string',
             'latitude' => 'sometimes|numeric',
             'longitude' => 'sometimes|numeric',
