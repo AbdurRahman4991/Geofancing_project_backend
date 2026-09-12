@@ -1,6 +1,5 @@
 <?php
 
-
 namespace App\Services\Geofence;
 
 use App\Models\Geofence;

@@ -56,30 +56,17 @@ Route::middleware('auth:sanctum', 'throttle:api-auth')->group(function () {
     Route::get('/assign-role/users', [UserController::class, 'assignRoleUsers']);
     Route::post('roles/{role}/assign-permission', [PermissionController::class, 'assignPermission']);
     Route::get('/locations/employees', [EmployeeLocationEmployeeController::class, 'employeesLocationEmployee']);
+    Route::apiResource('companies', CompanyController::class);
+    Route::apiResource('attendance-rules', AttendanceRuleController::class);
 
     // Hierarchy //
 
     Route::apiResource('countries', CountryController::class);
-
     Route::apiResource('regions', RegionController::class);
-
     Route::apiResource('zones', ZoneController::class);
-
     Route::apiResource('divisions', DivisionController::class);
-
     Route::apiResource('districts', DistrictController::class);
-
     Route::apiResource('sub-districts', SubDistrictController::class);
-
     Route::apiResource('territories', TerritoryController::class);
-
-    Route::apiResource('areas', AreaController::class);
-
-    
-    
-    
+    Route::apiResource('areas', AreaController::class);    
 });
-
-
- //Route::apiResource('companies', CompanyController::class);
- //Route::apiResource('attendance-rules', AttendanceRuleController::class);

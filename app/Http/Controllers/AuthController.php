@@ -12,6 +12,7 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Mail;
 use Carbon\Carbon;
 use App\Mail\SendOtpMail;
+use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
@@ -36,26 +37,48 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $data = $request->validate([
-            //'name' => 'required|string|max:255',
-            //'email' => 'required|email',            
-              'employee_id' => ['required', 'string', 'unique:users,employee_id'],
-              'phone' => ['required', 'string', 'min:11'],
-            //'password' => 'required|string|min:8|confirmed',
+            'employee_id' => 'required|exists:employees,employee_id|unique:users,employee_id',
+            'email'      => 'required|email|unique:users,email',
+            'password'   => 'required|string|min:8|confirmed',
+        ]);
+        
+        $employee = Employee::where('employee_id', $data['employee_id'])->first();        
+        $user = User::create([
+            'employee_id' => $employee->id,
+            'email'       => $data['email'],
+            'password'    => Hash::make($data['password']),
         ]);
 
-        $exists = Employee::where('employee_id', $data['employee_id'])
-                    ->where('phone', $data['phone'])
-                    ->exists();
+        event(new Registered($user));
 
-        if (!$exists) {
-            throw ValidationException::withMessages([
-                'employee_id' => ['Invalid employee ID or phone number combination.'],
-            ]);
-        }
+        return response()->json([
+            'message' => 'Registration successful.'
+        ], 201);
+    }
+
+    // public function register(Request $request)
+    // {
+    //     $data = $request->validate([
+    //         //'name' => 'required|string|max:255',
+    //         //'email' => 'required|email',            
+    //           'employee_id' => ['required', 'string', 'unique:users,employee_id'],
+    //           'phone' => ['required', 'string', 'min:11'],
+    //         //'password' => 'required|string|min:8|confirmed',
+    //     ]);
+
+    //     $exists = Employee::where('employee_id', $data['employee_id'])
+    //                 ->where('phone', $data['phone'])
+    //                 ->exists();
+
+    //     if (!$exists) {
+    //         throw ValidationException::withMessages([
+    //             'employee_id' => ['Invalid employee ID or phone number combination.'],
+    //         ]);
+    //     }
 
        // $data['password'] = bcrypt($data['password']);
 
-        $user = User::create($data);
+    //    $user = User::create($data);
 
         // OTP তৈরি
         // $otp = rand(100000, 999999);
@@ -70,100 +93,141 @@ class AuthController extends Controller
        // Mail::to($user->email)->queue(new SendOtpMail($otp));
 
 
-        return response()->json([
-            'status' => 200,
-            'message' => 'Registration successful.',
-            'email' => $user->email
-        ], 200);
-    }
+    //     return response()->json([
+    //         'status' => 200,
+    //         'message' => 'Registration successful.',
+    //         'email' => $user->email
+    //     ], 200);
+    // }
 
+    // public function login(Request $request)
+    // {
+    //     $request->validate([
+    //         'employee_id' => 'required|string',
+    //         'phone'       => 'required|string',
+    //         'device_id'   => 'required|string',
+    //         'latitude'    => 'required|string',
+    //         'longitude'   => 'required|string',
+    //     ]);
+
+    //     // $user = User::with('employee')->where('employee_id', $request->employee_id)
+    //     //             ->where('phone', $request->phone)
+    //     //             ->first();
+    //     $user = User::with('employee')
+    //         ->where('employee_id', $request->employee_id)
+    //         ->where('phone', $request->phone)
+    //         ->first();
+
+
+    //     if (!$user) {
+    //         throw ValidationException::withMessages([
+    //             'employee_id' => ['The provided credentials are incorrect.']
+    //         ]);
+    //     }
+
+    //     $userId = $user->id;
+    //     $userGeoFancing = Geofence::where('user_id', $userId)->select('latitude','longitude','radius','firm_name')->get();
+
+
+        
+    //     Auth::login($user);
+        
+    //     $user->tokens()->delete();
+
+    //     $token = $user->createToken('api-token')->plainTextToken;
+    
+    //     $user->update([
+    //         'device_id' => $request->device_id,
+    //         'latitude'  => $request->latitude,
+    //         'longitude' => $request->longitude,
+    //         // 'otp' => $otp,
+    //         // 'otp_expires_at' => Carbon::now()->addMinutes(5),
+    //     ]);
+
+    //     return response()->json([
+    //         'status'       => 200,
+    //         'access_token' => $token,
+    //         'token_type'   => 'Bearer',            
+    //         'user'         => $user,
+    //         'geofancing'   => $userGeoFancing,
+    //     ]);
+    // }
     public function login(Request $request)
     {
         $request->validate([
-            'employee_id' => 'required|string',
-            'phone'       => 'required|string',
-            'device_id'   => 'required|string',
-            'latitude'    => 'required|string',
-            'longitude'   => 'required|string',
+            'email'     => 'required|email',
+            'password'  => 'required|string',
+            'device_id' => 'required|string',
+            'latitude'  => 'required|string',
+            'longitude' => 'required|string',
         ]);
-
-        // $user = User::with('employee')->where('employee_id', $request->employee_id)
-        //             ->where('phone', $request->phone)
-        //             ->first();
+        
         $user = User::with('employee')
-            ->where('employee_id', $request->employee_id)
-            ->where('phone', $request->phone)
+            ->where('email', $request->email)
             ->first();
-
-
-        if (!$user) {
+        
+        if (!$user || !Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
-                'employee_id' => ['The provided credentials are incorrect.']
+                'email' => ['The provided credentials are incorrect.']
             ]);
         }
 
-        $userId = $user->id;
-        $userGeoFancing = Geofence::where('user_id', $userId)->select('latitude','longitude','radius','firm_name')->get();
-
-
-        
+        // Login
         Auth::login($user);
         
         $user->tokens()->delete();
-
-        $token = $user->createToken('api-token')->plainTextToken;
-    
+        
+        $token = $user->createToken('api-token')
+            ->plainTextToken;
+        
         $user->update([
             'device_id' => $request->device_id,
             'latitude'  => $request->latitude,
             'longitude' => $request->longitude,
-            // 'otp' => $otp,
-            // 'otp_expires_at' => Carbon::now()->addMinutes(5),
         ]);
 
         return response()->json([
             'status'       => 200,
             'access_token' => $token,
-            'token_type'   => 'Bearer',            
-            'user'         => $user,
-            'geofancing'   => $userGeoFancing,
+            'token_type'   => 'Bearer',
+            'user'         => $user,           
         ]);
     }
 
     public function adminLogin(Request $request)
-{
-    $request->validate([
-        'email'    => 'required|email',
-        'password' => 'required|string',
-    ]);
+    {
+        $request->validate([
+            'email'    => 'required|email',
+            'password' => 'required|string',
+        ]);
 
-    if (!Auth::attempt($request->only('email', 'password'))) {
-        throw ValidationException::withMessages([
-            'email' => ['The provided credentials are incorrect.'],
+        if (!Auth::attempt($request->only('email', 'password'))) {
+            throw ValidationException::withMessages([
+                'email' => ['The provided credentials are incorrect.'],
+            ]);
+        }
+
+        // Login User
+        $user = Auth::user();
+
+        // আগের token delete করতে চাইলে
+        $user->tokens()->delete();
+
+        // নতুন token তৈরি
+        $token = $user->createToken('admin-token')->plainTextToken;
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Login successful.',
+            'token' => $token,
+            'token_type' => 'Bearer',
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+            ]
         ]);
     }
-
-    // Login User
-    $user = Auth::user();
-
-    // আগের token delete করতে চাইলে
-    $user->tokens()->delete();
-
-    // নতুন token তৈরি
-    $token = $user->createToken('admin-token')->plainTextToken;
-
-    return response()->json([
-        'status' => true,
-        'message' => 'Login successful.',
-        'token' => $token,
-        'token_type' => 'Bearer',
-        'user' => [
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-        ]
-    ]);
-}
 
     // public function adminLogin(Request $request)
     // {

@@ -27,7 +27,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'phone',
         'employee_id',
         'device_id',
-        // 'password',
+        'password',
         'otp',
         'otp_expires_at',
         'email_verified_at',
@@ -60,13 +60,8 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function employee()
     {
-        return $this->hasOne(
-            Employee::class,
-            'employee_id', // employees table column
-            'employee_id'  // users table column
-        );
+        return $this->belongsTo(Employee::class, 'employee_id', 'id');
     }
-
     public function attendanceRules() {
         return $this->hasMany(AttendanceRule::class);
     }
