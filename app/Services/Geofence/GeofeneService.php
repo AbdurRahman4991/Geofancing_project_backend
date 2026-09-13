@@ -6,6 +6,7 @@ use App\Models\Geofence;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use App\Models\Attendance;
+use App\Models\EmployeeHierarchyAssignment;
 
 class GeofeneService
 {
@@ -42,10 +43,26 @@ class GeofeneService
             ]);
         }
 
+       $assignment = EmployeeHierarchyAssignment::where('user_id', auth()->id())
+        ->where('is_current', true)
+        ->first();
+
+        if (!$assignment) {
+            return response()->json([
+                'status' => 404,
+                'message' => 'No active hierarchy assignment found for this user.',
+            ], 404);
+        }
+
         $geofences = $query
-            ->where('area_id', auth()->id())
+            ->where('area_id', $assignment->area_id)
             ->latest()
             ->get();
+
+        // $geofences = $query
+        //     ->where('area_id', auth()->id())
+        //     ->latest()
+        //     ->get();
 
         $todayVisited = Attendance::where('user_id', auth()->id())
             ->whereDate('check_in_time', today())

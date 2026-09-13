@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class EmployeeHierarchyAssignment extends Model
 {
     protected $fillable = [
-       // 'employee_id',
+        'user_id',
         'country_id',
         'region_id',
         'zone_id',

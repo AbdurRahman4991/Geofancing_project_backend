@@ -58,7 +58,7 @@ return new class extends Migration
                 ->constrained('areas')
                 ->nullOnDelete();
 
-            $table->date('effective_from');
+            $table->date('effective_from')->nullable();
 
             $table->date('effective_to')
                 ->nullable();
