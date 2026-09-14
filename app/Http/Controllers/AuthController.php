@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Employee;
 use App\Models\Geofence;
+use App\Models\EmployeeHierarchyAssignment;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Validation\ValidationException;
@@ -125,8 +126,8 @@ class AuthController extends Controller
     //         ]);
     //     }
 
-    //     $userId = $user->id;
-    //     $userGeoFancing = Geofence::where('user_id', $userId)->select('latitude','longitude','radius','firm_name')->get();
+        // $userId = $user->id;
+        // $userGeoFancing = Geofence::where('user_id', $userId)->select('latitude','longitude','radius','firm_name')->get();
 
 
         
@@ -161,25 +162,50 @@ class AuthController extends Controller
             'latitude'  => 'required|string',
             'longitude' => 'required|string',
         ]);
-        
-        $user = User::with('employee')
-            ->where('email', $request->email)
-            ->first();
-        
+        $user = User::select([
+            'id',
+            'email',
+            'employee_id',
+            'status',
+            'password',
+        ])
+        ->with([
+            'employee:id,name,employee_id,company_id,designation',
+            'hierarchyAssignment:id,user_id,country_id,region_id,zone_id,division_id,district_id,sub_district_id,area_id,territory_id'
+        ])
+        ->where('email', $request->email)
+        ->first();
+
         if (!$user || !Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
                 'email' => ['The provided credentials are incorrect.']
             ]);
         }
 
+       $areaId = $user->hierarchyAssignment?->area_id;
+        $userGeoFancing = collect();
+        if ($areaId) {
+            $userGeoFancing = Geofence::where('area_id', $areaId)
+                ->select(
+                    'latitude',
+                    'longitude',
+                    'radius',
+                    'firm_name'
+                )
+                ->get();
+        }
+
         // Login
         Auth::login($user);
-        
+
+        // Delete old tokens
         $user->tokens()->delete();
-        
+
+        // Create new token
         $token = $user->createToken('api-token')
             ->plainTextToken;
-        
+
+        // Update device information
         $user->update([
             'device_id' => $request->device_id,
             'latitude'  => $request->latitude,
@@ -187,10 +213,11 @@ class AuthController extends Controller
         ]);
 
         return response()->json([
-            'status'       => 200,
-            'access_token' => $token,
-            'token_type'   => 'Bearer',
-            'user'         => $user,           
+            'status'        => 200,
+            'access_token'  => $token,
+            'token_type'    => 'Bearer',
+            'user' => $user,
+            'geofancing'   => $userGeoFancing,
         ]);
     }
 
@@ -289,7 +316,7 @@ class AuthController extends Controller
             return response()->json(['message' => 'OTP expired.'], 400);
         }
 
-        // ✅ OTP valid হলে, null করে দাও এবং টোকেন তৈরি করো
+        
         $user->update([
             'otp' => null,
             'otp_expires_at' => null,

@@ -41,8 +41,9 @@ class User extends Authenticatable implements MustVerifyEmail
      * @var list<string>
      */
     protected $hidden = [
-       // 'password',
+        'password',
         'remember_token',
+        
     ];
 
     /**
@@ -73,6 +74,12 @@ class User extends Authenticatable implements MustVerifyEmail
     public function employeeGeofence()
     {
         return $this->belongsTo(Employee::class, 'employee_id');
+    }
+
+    public function hierarchyAssignment()
+    {
+        return $this->hasOne(EmployeeHierarchyAssignment::class, 'user_id')
+            ->where('is_current', true);
     }
 
 }
