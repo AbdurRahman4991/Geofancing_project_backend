@@ -11,11 +11,39 @@ class TerritoryController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
+        $territories = Territory::with('subDistrict')
+
+            // Filter by sub_district_id
+            ->when($request->filled('sub_district_id'), function ($query) use ($request) {
+                $query->where(
+                    'sub_district_id',
+                    $request->sub_district_id
+                );
+            })
+
+            // Search
+            ->when($request->filled('search'), function ($query) use ($request) {
+                $search = $request->search;
+
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%");                    
+                });
+            })
+
+            // Latest first
+            ->latest()
+
+            // Pagination
+            ->paginate(
+                $request->get('per_page', 10)
+            )
+            ->withQueryString();
+
         return response()->json([
             'status' => 200,
-            'data' => Territory::with('subDistrict')->latest()->get()
+            'data' => $territories
         ]);
     }
 

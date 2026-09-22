@@ -27,7 +27,6 @@ use App\Http\Controllers\Api\Hierarchy\TerritoryController;
 use App\Http\Controllers\Api\Hierarchy\AreaController;
 use App\Http\Controllers\Api\Hierarchy\EmployeeHierarchyAssignmentControler;
 
-
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/admin-login', [AuthController::class, 'adminLogin']);
@@ -70,7 +69,7 @@ Route::middleware('auth:sanctum', 'throttle:api-auth')->group(function () {
     Route::apiResource('sub-districts', SubDistrictController::class);
     Route::apiResource('territories', TerritoryController::class);
     Route::apiResource('areas', AreaController::class);
-    Route::post('assign', [EmployeeHierarchyAssignmentControler::class,'assignUser']); 
+    Route::post('assign-hierarchy', [EmployeeHierarchyAssignmentControler::class,'assignUser']); 
           
 });
  

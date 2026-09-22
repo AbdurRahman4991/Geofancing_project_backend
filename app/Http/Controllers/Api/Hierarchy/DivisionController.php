@@ -11,13 +11,53 @@ class DivisionController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
-    {
-        return response()->json([
-            'status' => 200,
-            'data' => Division::with('zone')->latest()->get()
-        ]);
-    }
+public function index(Request $request)
+{
+    $divisions = Division::with('zone')
+
+        // ==============================
+        // Filter by Zone
+        // ==============================
+        ->when(
+            $request->filled('zone_id'),
+            function ($query) use ($request) {
+                $query->where(
+                    'zone_id',
+                    $request->zone_id
+                );
+            }
+        )
+
+        // ==============================
+        // Search
+        // ==============================
+        ->when(
+            $request->filled('search'),
+            function ($query) use ($request) {
+
+                $search = $request->search;
+
+                $query->where(function ($q) use ($search) {
+
+                    $q->where(
+                        'name',
+                        'like',
+                        "%{$search}%"
+                    );
+                });
+            }
+        )
+        ->latest()
+        ->paginate(
+            $request->get('per_page', 10)
+        )
+        ->withQueryString();
+
+    return response()->json([
+        'status' => 200,
+        'data' => $divisions
+    ]);
+}
 
     public function store(Request $request)
     {

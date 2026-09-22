@@ -11,11 +11,33 @@ class AreaController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
+        $query = Area::with('territory');
+
+        // Filter by territory_id
+        if ($request->filled('territory_id')) {
+            $query->where('territory_id', $request->territory_id);
+        }
+
+        // Search
+        if ($request->filled('search')) {
+            $search = $request->search;
+
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%") ;               
+            });
+        }
+
+        // Pagination
+        $areas = $query
+            ->latest()
+            ->paginate($request->get('per_page', 10))
+            ->withQueryString();
+
         return response()->json([
             'status' => 200,
-            'data' => Area::with('territory')->latest()->get()
+            'data' => $areas
         ]);
     }
 

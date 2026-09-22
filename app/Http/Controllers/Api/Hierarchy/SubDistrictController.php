@@ -11,11 +11,40 @@ class SubDistrictController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
+        $subDistricts = SubDistrict::with('district')
+
+            // Filter by district_id
+            ->when($request->filled('district_id'), function ($query) use ($request) {
+                $query->where(
+                    'district_id',
+                    $request->district_id
+                );
+            })
+
+            // Search
+            ->when($request->filled('search'), function ($query) use ($request) {
+                $search = $request->search;
+
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%");                    
+                });
+            })
+
+            // Latest first
+            ->latest()
+
+            // Pagination
+            ->paginate(
+                $request->get('per_page', 10)
+            )
+
+            ->withQueryString();
+
         return response()->json([
             'status' => 200,
-            'data' => SubDistrict::with('district')->latest()->get()
+            'data' => $subDistricts
         ]);
     }
 

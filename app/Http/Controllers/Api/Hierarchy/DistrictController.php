@@ -10,11 +10,41 @@ class DistrictController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
+        $districts = District::with('division')
+
+            // Filter by division_id
+            ->when($request->filled('division_id'), function ($query) use ($request) {
+                $query->where(
+                    'division_id',
+                    $request->division_id
+                );
+            })
+
+            // Search
+            ->when($request->filled('search'), function ($query) use ($request) {
+                $search = $request->search;
+
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%");
+                    
+                });
+            })
+
+            // Latest first
+            ->latest()
+
+            // Pagination
+            ->paginate(
+                $request->get('per_page', 10)
+            )
+
+            ->withQueryString();
+
         return response()->json([
             'status' => 200,
-            'data' => District::with('division')->latest()->get()
+            'data' => $districts
         ]);
     }
 

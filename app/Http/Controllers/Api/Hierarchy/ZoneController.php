@@ -7,15 +7,54 @@ use Illuminate\Http\Request;
 
 class ZoneController extends Controller
 {
-    public function index()
-    {
-        $zones = Zone::with('region')->latest()->get();
+public function index(Request $request)
+{
+    $zones = Zone::with('region')
 
-        return response()->json([
-            'status' => 200,
-            'data' => $zones
-        ]);
-    }
+        // ==============================
+        // Filter by Region
+        // ==============================
+        ->when(
+            $request->filled('region_id'),
+            function ($query) use ($request) {
+                $query->where(
+                    'region_id',
+                    $request->region_id
+                );
+            }
+        )
+
+        // ==============================
+        // Search
+        // ==============================
+        ->when(
+            $request->filled('search'),
+            function ($query) use ($request) {
+
+                $search = $request->search;
+
+                $query->where(function ($q) use ($search) {
+
+                    $q->where(
+                        'name',
+                        'like',
+                        "%{$search}%"
+                    );
+                });
+            }
+        )
+        ->latest()
+        ->paginate(
+            $request->get('per_page', 10)
+        )
+
+        ->withQueryString();
+
+    return response()->json([
+        'status' => 200,
+        'data' => $zones
+    ]);
+}
 
     public function store(Request $request)
     {
