@@ -78,4 +78,8 @@ class EmployeeHierarchyAssignment extends Model
     {
         return $this->belongsTo(User::class, 'assigned_by');
     }
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }

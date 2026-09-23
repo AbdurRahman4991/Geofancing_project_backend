@@ -13,10 +13,14 @@ class GeofeneService
    
    public function index(Request $request)
     {
+        // $query = Geofence::with([
+        //     'company:id,company_name',
+        //     'user:id,name,employee_id',
+        //     'user.employee:id,name,employee_id',
+        // ]);
         $query = Geofence::with([
             'company:id,company_name',
-            'user:id,name,employee_id',
-            'user.employee:id,name,employee_id',
+            'area:id,name,territory_id',
         ]);
 
         if (auth()->user()->hasRole('super-admin')) {
@@ -25,12 +29,22 @@ class GeofeneService
                 $query->where('area_id', $request->area_id);
             }
 
+            // if ($request->filled('search')) {
+            //     $search = $request->search;
+
+            //     $query->whereHas('user.employee', function ($q) use ($search) {
+            //         $q->where('name', 'like', "%{$search}%")
+            //         ->orWhere('employee_id', 'like', "%{$search}%");
+            //     });
+            // }
             if ($request->filled('search')) {
                 $search = $request->search;
 
-                $query->whereHas('user.employee', function ($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('employee_id', 'like', "%{$search}%");
+                $query->where(function ($q) use ($search) {
+                    $q->where('firm_name', 'like', "%{$search}%")
+                        ->orWhereHas('area', function ($areaQuery) use ($search) {
+                            $areaQuery->where('name', 'like', "%{$search}%");
+                        });
                 });
             }
 

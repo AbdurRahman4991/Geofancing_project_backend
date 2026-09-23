@@ -1,35 +1,4 @@
 <?php
-
-// namespace App\Models;
-
-// use Illuminate\Database\Eloquent\Model;
-// use Spatie\MediaLibrary\HasMedia;
-// use Spatie\MediaLibrary\InteractsWithMedia;
-
-// class Geofence extends Model implements HasMedia
-// {
-//     use InteractsWithMedia;
-//         protected $fillable = [
-//         'company_id',
-//         'user_id',
-//         'firm_name',
-//         'latitude',
-//         'longitude',
-//         'radius',
-//     ];
-
-//      public function company()
-//     {
-//         return $this->belongsTo(Company::class);
-//     }
-
-//     public function user()
-//     {
-//         return $this->belongsTo(User::class);
-//     }
-// }
-
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -62,6 +31,11 @@ class Geofence extends Model implements HasMedia
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function area()
+    {
+        return $this->belongsTo(Area::class);
     }
 
     /**
