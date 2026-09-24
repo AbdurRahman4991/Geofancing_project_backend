@@ -116,17 +116,41 @@ class PermissionController extends Controller
         ]);
     }
 
+    // public function assignPermission(Request $request, Role $role)
+    // {       
+    //     $request->validate([
+    //         'permissions' => 'required|array'
+    //     ]);
+
+    //     $role->syncPermissions($request->permissions);
+
+    //     return response()->json([
+    //         'status' => true,
+    //         'message' => 'Permissions assigned successfully'
+    //     ]);
+    // }
     public function assignPermission(Request $request, Role $role)
     {
         $request->validate([
-            'permissions' => 'required|array'
+            'permissions' => 'required|array',
+            'permissions.*' => 'integer|exists:permissions,id',
         ]);
 
-        $role->syncPermissions($request->permissions);
+        $permissions = Permission::whereIn(
+            'id',
+            $request->permissions
+        )
+        ->where('guard_name', $role->guard_name)
+        ->get();
+
+        $role->syncPermissions($permissions);
 
         return response()->json([
             'status' => true,
-            'message' => 'Permissions assigned successfully'
+            'message' => 'Permissions assigned successfully',
+            'permissions' => $permissions->pluck('name'),
         ]);
     }
+
+
 }

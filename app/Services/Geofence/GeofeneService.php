@@ -13,11 +13,6 @@ class GeofeneService
    
    public function index(Request $request)
     {
-        // $query = Geofence::with([
-        //     'company:id,company_name',
-        //     'user:id,name,employee_id',
-        //     'user.employee:id,name,employee_id',
-        // ]);
         $query = Geofence::with([
             'company:id,company_name',
             'area:id,name,territory_id',
@@ -29,14 +24,6 @@ class GeofeneService
                 $query->where('area_id', $request->area_id);
             }
 
-            // if ($request->filled('search')) {
-            //     $search = $request->search;
-
-            //     $query->whereHas('user.employee', function ($q) use ($search) {
-            //         $q->where('name', 'like', "%{$search}%")
-            //         ->orWhere('employee_id', 'like', "%{$search}%");
-            //     });
-            // }
             if ($request->filled('search')) {
                 $search = $request->search;
 
@@ -72,11 +59,6 @@ class GeofeneService
             ->where('area_id', $assignment->area_id)
             ->latest()
             ->get();
-
-        // $geofences = $query
-        //     ->where('area_id', auth()->id())
-        //     ->latest()
-        //     ->get();
 
         $todayVisited = Attendance::where('user_id', auth()->id())
             ->whereDate('check_in_time', today())

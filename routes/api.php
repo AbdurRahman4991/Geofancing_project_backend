@@ -16,7 +16,6 @@ use App\Http\Controllers\Api\Employee\EmployeeLocationEmployeeController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\UserController;
-
 use App\Http\Controllers\Api\Hierarchy\CountryController;
 use App\Http\Controllers\Api\Hierarchy\RegionController;
 use App\Http\Controllers\Api\Hierarchy\ZoneController;
@@ -69,9 +68,9 @@ Route::middleware('auth:sanctum', 'throttle:api-auth')->group(function () {
     Route::apiResource('districts', DistrictController::class);
     Route::apiResource('sub-districts', SubDistrictController::class);
     Route::apiResource('territories', TerritoryController::class);
-    Route::apiResource('areas', AreaController::class);
-    //Route::post('assign-hierarchy', [EmployeeHierarchyAssignmentControler::class,'assignUser']); 
+    Route::apiResource('areas', AreaController::class); 
     Route::apiResource('employee-hierarchy-assignments', EmployeeHierarchyAssignController::class );
+    Route::get('roles/{roleId}/permissions',[RoleController::class, 'getRolePermissions']);
           
 });
  

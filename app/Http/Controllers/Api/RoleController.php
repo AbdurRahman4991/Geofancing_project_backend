@@ -97,4 +97,19 @@ class RoleController extends Controller
             'message' => 'Role assigned successfully'
         ]);
     }
+
+    public function getRolePermissions($roleId)
+    {
+        $role = Role::findOrFail($roleId);
+
+        $permissions = $role->permissions()->get([
+            'id',
+            'name',
+        ]);
+
+        return response()->json([
+            'status' => 200,
+            'data' => $permissions,
+        ]);
+    }
 }
