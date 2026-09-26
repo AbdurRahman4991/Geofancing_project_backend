@@ -13,7 +13,10 @@ class Company extends Model implements HasMedia
         'company_name',
         'email',
         'phone',
-        'address', 
+        'address',
+        'package',
+        'details',
+        'billing_cycle', 
         'avatar',      
     ];
     protected $appends = ['avatar_url'];

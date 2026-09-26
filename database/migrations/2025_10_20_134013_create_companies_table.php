@@ -17,7 +17,9 @@ return new class extends Migration
             $table->string('email')->nullable();
             $table->string('phone')->nullable();
             $table->string('address')->nullable();
-            $table->string('avatar')->nullable();
+            $table->string('package')->nullable();
+            $table->string('details')->nullable();
+            $table->string('billing_cycle')->nullable();                        
             $table->enum('status', [
                 'Active',
                 'Inactive',
@@ -28,6 +30,7 @@ return new class extends Migration
                 'No',                                
             ])->default('No');
             $table->timestamps();
+            
         });
     }
 

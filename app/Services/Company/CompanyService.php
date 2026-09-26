@@ -44,7 +44,7 @@ class CompanyService
 
     public function store(Request $request)
     {
-        $company = Company::create($request->only(['company_name', 'email', 'phone', 'address']));
+        $company = Company::create($request->only(['company_name', 'email', 'phone', 'address','details','package','billing_cycle']));
 
         if ($request->hasFile('avatar')) {
             $company->addMediaFromRequest('avatar')->toMediaCollection('avatar');
@@ -56,20 +56,15 @@ class CompanyService
         return $company;
     }
 
-
-    // public function show($id)
-    // {
-    //     return Company::findOrFail($id);
-    // }
     public function show($id)
-{
-    $company = Company::findOrFail($id);
+    {
+        $company = Company::findOrFail($id);
 
-    // Add avatar URL (just like in all() method)
-    $company->avatar = $company->getFirstMediaUrl('avatar');
+        // Add avatar URL (just like in all() method)
+        $company->avatar = $company->getFirstMediaUrl('avatar');
 
-    return $company;
-}
+        return $company;
+    }
 
 
     public function update(Request $request, $id)
