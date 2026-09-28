@@ -7,18 +7,26 @@ use Illuminate\Http\Request;
 use Carbon\Carbon;
 use App\Models\Attendance;
 use App\Models\EmployeeHierarchyAssignment;
+use App\Traits\CompanyScoped;
 
 class GeofeneService
 {
    
+    use CompanyScoped;
    public function index(Request $request)
     {
+        return "hello world";
+        if (!auth()->user()->can('farm.view')) {
+            abort(403, 'You do not have permission to view employees.');
+        }
         $query = Geofence::with([
             'company:id,company_name',
             'area:id,name,territory_id',
         ]);
 
-        if (auth()->user()->hasRole('super-admin')) {
+       // $this->applyCompanyScope($query);
+
+        if (auth()->user()->hasRole('Super-Admin')) {
 
             if ($request->filled('area_id')) {
                 $query->where('area_id', $request->area_id);
@@ -86,6 +94,9 @@ class GeofeneService
 
     public function store(Request $request)
     {
+        if (!auth()->user()->can('farm.create')) {
+            abort(403, 'You do not have permission to view employees.');
+        }        
         $geofence = Geofence::create($request->only([
             'company_id',
             'area_id',
@@ -107,12 +118,18 @@ class GeofeneService
 
     public function show($id)
     {
+        if (!auth()->user()->can('farm.edit')) {
+            abort(403, 'You do not have permission to view employees.');
+        }        
         return Geofence::with(['company:id,company_name', 'user:id,name'])
             ->findOrFail($id);
     }
 
     public function update(Request $request, $id)
     {
+        if (!auth()->user()->can('farm.edit')) {
+            abort(403, 'You do not have permission to view employees.');
+        }        
         $geofence = Geofence::findOrFail($id);
 
         $geofence->update($request->only([

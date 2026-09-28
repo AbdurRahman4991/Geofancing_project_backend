@@ -12,6 +12,9 @@ class DistrictController extends Controller
      */
     public function index(Request $request)
     {
+        if (!auth()->user()->can('district.view')) {
+        abort(403, 'You do not have permission to district view.');
+        }          
         $districts = District::with('division')
 
             // Filter by division_id
@@ -50,6 +53,9 @@ class DistrictController extends Controller
 
     public function store(Request $request)
     {
+        if (!auth()->user()->can('district.create')) {
+        abort(403, 'You do not have permission to district create.');
+        }          
         $validated = $request->validate([
             'division_id' => 'required|exists:divisions,id',
             'name' => 'required|string|max:150',
@@ -67,6 +73,9 @@ class DistrictController extends Controller
 
     public function show($id)
     {
+        if (!auth()->user()->can('district.edit')) {
+        abort(403, 'You do not have permission to district edite.');
+        }           
         return response()->json([
             'status' => 200,
             'data' => District::with([
@@ -78,6 +87,9 @@ class DistrictController extends Controller
 
     public function update(Request $request, $id)
     {
+        if (!auth()->user()->can('district.edit')) {
+        abort(403, 'You do not have permission to district edite.');
+        }          
         $district = District::findOrFail($id);
 
         $validated = $request->validate([
@@ -97,6 +109,9 @@ class DistrictController extends Controller
 
     public function destroy($id)
     {
+        if (!auth()->user()->can('district.delete')) {
+        abort(403, 'You do not have permission to district delte.');
+        }          
         District::findOrFail($id)->delete();
 
         return response()->json([

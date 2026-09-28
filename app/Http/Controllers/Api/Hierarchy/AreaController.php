@@ -13,6 +13,9 @@ class AreaController extends Controller
      */
     public function index(Request $request)
     {
+        if (!auth()->user()->can('area.view')) {
+        abort(403, 'You do not have permission to area view.');
+        }         
         $query = Area::with('territory');
 
         // Filter by territory_id
@@ -43,6 +46,9 @@ class AreaController extends Controller
 
     public function store(Request $request)
     {
+        if (!auth()->user()->can('area.create')) {
+        abort(403, 'You do not have permission to area create.');
+        }         
         $validated = $request->validate([
             'territory_id' => 'required|exists:territories,id',
             'name' => 'required|string|max:150',
@@ -60,6 +66,9 @@ class AreaController extends Controller
 
     public function show($id)
     {
+        if (!auth()->user()->can('area.edit')) {
+        abort(403, 'You do not have permission to area edit.');
+        }         
         return response()->json([
             'status' => 200,
             'data' => Area::with('territory')->findOrFail($id)
@@ -68,6 +77,9 @@ class AreaController extends Controller
 
     public function update(Request $request, $id)
     {
+        if (!auth()->user()->can('area.edit')) {
+        abort(403, 'You do not have permission to area edit.');
+        }         
         $area = Area::findOrFail($id);
 
         $validated = $request->validate([
@@ -87,6 +99,9 @@ class AreaController extends Controller
 
     public function destroy($id)
     {
+        if (!auth()->user()->can('area.delete')) {
+        abort(403, 'You do not have permission to area delete.');
+        }         
         Area::findOrFail($id)->delete();
 
         return response()->json([

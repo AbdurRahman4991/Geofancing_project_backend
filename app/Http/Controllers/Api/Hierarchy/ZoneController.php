@@ -9,6 +9,9 @@ class ZoneController extends Controller
 {
 public function index(Request $request)
 {
+    if (!auth()->user()->can('zone.view')) {
+    abort(403, 'You do not have permission to zone view.');
+    }     
     $zones = Zone::with('region')
 
         // ==============================
@@ -58,6 +61,9 @@ public function index(Request $request)
 
     public function store(Request $request)
     {
+        if (!auth()->user()->can('zone.create')) {
+        abort(403, 'You do not have permission to zone create.');
+        }         
         $validated = $request->validate([
             'region_id' => 'required|exists:regions,id',
             'name' => 'required|string|max:150',
@@ -75,6 +81,9 @@ public function index(Request $request)
 
     public function show($id)
     {
+        if (!auth()->user()->can('zone.edit')) {
+        abort(403, 'You do not have permission to zone edit.');
+        }         
         $zone = Zone::with([
             'region',
             'divisions'
@@ -88,6 +97,9 @@ public function index(Request $request)
 
     public function update(Request $request, $id)
     {
+        if (!auth()->user()->can('zone.edit')) {
+        abort(403, 'You do not have permission to zone edit.');
+        }         
         $zone = Zone::findOrFail($id);
 
         $validated = $request->validate([
@@ -107,6 +119,9 @@ public function index(Request $request)
 
     public function destroy($id)
     {
+        if (!auth()->user()->can('zone.delete')) {
+        abort(403, 'You do not have permission to zone delete.');
+        }         
         $zone = Zone::findOrFail($id);
 
         $zone->delete();

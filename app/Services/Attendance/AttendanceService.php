@@ -14,143 +14,12 @@ use Illuminate\Support\Facades\Cache;
 
 class AttendanceService
 {
-    /**
-     * 🟢 Handle Employee Check-In
-     */
-
-    // public function checkIn($data)
-    // {
-    //     $user = Auth::user();
-
-    //     // ✅ Get all geofences
-    //     $geofences = Geofence::where('user_id', $user->id)->get();
-
-    //     if ($geofences->isEmpty()) {
-    //         return [
-    //             'success' => false,
-    //             'message' => 'Geofence not set for this employee!'
-    //         ];
-    //     }
-
-    //     // ✅ Get attendance rule
-    //     $attendanceRule = AttendanceRule::where('user_id', $user->id)->first();
-
-       
-    //     if (!$attendanceRule) {
-
-    //         $employee = Employee::where('employee_id', $user->employee_id)->first();
-
-    //         if ($employee) {
-    //             $attendanceRule = AttendanceRule::where('company_id', $employee->company_id)
-    //                 ->whereNull('user_id')
-    //                 ->first();
-    //         }
-    //     }
-
-    //     // এখনও rule না পেলে error return করুন
-    //     if (!$attendanceRule) {
-    //         return [
-    //             'success' => false,
-    //             'message' => 'Attendance rule not found!'
-    //         ];
-    //     }
-
-    //     // =============================================
-    //     // Find matched geofence
-    //     // =============================================
-
-    //     $matchedGeofence = null;
-    //     $distance = 0;
-
-    //     foreach ($geofences as $geofence) {
-
-    //         $distance = $this->calculateDistance(
-    //             $geofence->latitude,
-    //             $geofence->longitude,
-    //             $data['latitude'],
-    //             $data['longitude']
-    //         );
-
-    //         if ($distance <= $geofence->radius) {
-    //             $matchedGeofence = $geofence;
-    //             break;
-    //         }
-    //     }
-
-    //     if (!$matchedGeofence) {
-    //         return [
-    //             'success' => false,
-    //             'message' => 'You are outside all allowed office areas!'
-    //         ];
-    //     }
-
-    //     // =============================================
-    //     // Prevent duplicate check-in in same geofence
-    //     // =============================================
-
-    //     $alreadyCheckedIn = Attendance::where('user_id', $user->id)
-    //         ->where('geofence_id', $matchedGeofence->id)
-    //         ->whereDate('check_in_time', Carbon::today())
-    //         ->exists();
-
-    //     if ($alreadyCheckedIn) {
-    //         return [
-    //             'success' => false,
-    //             'message' => 'You have already checked in at this location today!'
-    //         ];
-    //     }
-
-    //     // =============================================
-    //     // Late calculation
-    //     // =============================================
-
-    //     $officeInTime = Carbon::parse(
-    //         $attendanceRule->office_in_time,
-    //         'Asia/Dhaka'
-    //     );
-
-    //     $checkInTime = Carbon::now('Asia/Dhaka');
-
-    //     $lateFormatted = null;
-
-    //     if ($checkInTime->greaterThan($officeInTime)) {
-
-    //         $lateMinutes = $officeInTime->diffInMinutes($checkInTime);
-
-    //         $hours = floor($lateMinutes / 60);
-    //         $minutes = $lateMinutes % 60;
-
-    //         $lateFormatted = sprintf(
-    //             '%02d hour %02d minute',
-    //             $hours,
-    //             $minutes
-    //         );
-    //     }
-
-    //     // =============================================
-    //     // Save attendance
-    //     // =============================================
-
-    //     $attendance = Attendance::create([
-    //         'user_id' => $user->id,
-    //         'geofence_id' => $matchedGeofence->id,
-    //         'check_in_time' => $checkInTime,
-    //         'check_in_latitude' => $data['latitude'],
-    //         'check_in_longitude' => $data['longitude'],
-    //         'device_id' => $data['device_id'],
-    //         'status' => 'Checked In',
-    //         'distance_from_office' => $distance,
-    //         'late' => $lateFormatted,
-    //     ]);
-
-    //     return [
-    //         'success' => true,
-    //         'message' => 'Checked in successfully!',
-    //         'attendance' => $attendance
-    //     ];
-    // }
+    
     public function checkIn($data)
     {
+        if (!auth()->user()->can('checkin.create')) {
+            abort(403, 'You do not have permission to create checkin.');
+        } 
         $user = Auth::user();
 
         // =============================================
@@ -315,19 +184,10 @@ class AttendanceService
     
     public function checkOut($data)
     {
-        // $user = Auth::user();
+        if (!auth()->user()->can('checkout.create')) {
+            abort(403, 'You do not have permission to create checkout.');
+        }         
 
-        // // ==========================================
-        // // Step 1: Get all geofences
-        // // ==========================================
-        // $geofences = Geofence::where('area_id', $user->id)->get();
-
-        // if ($geofences->isEmpty()) {
-        //     return [
-        //         'success' => false,
-        //         'message' => 'Geofence not set for this employee!'
-        //     ];
-        // }
          $user = Auth::user();
 
         // =============================================
@@ -471,6 +331,9 @@ class AttendanceService
 
     public function attendanceHistory(Request $request)
     {
+        if (!auth()->user()->can('attendance.view')) {
+            abort(403, 'You do not have permission to attendance history.');
+        }         
         $user = Auth::user();
 
         $query = Attendance::query();

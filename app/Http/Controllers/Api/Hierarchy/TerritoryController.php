@@ -13,6 +13,9 @@ class TerritoryController extends Controller
      */
     public function index(Request $request)
     {
+        if (!auth()->user()->can('territory.view')) {
+        abort(403, 'You do not have permission to territory view.');
+        }         
         $territories = Territory::with('subDistrict')
 
             // Filter by sub_district_id
@@ -49,6 +52,9 @@ class TerritoryController extends Controller
 
     public function store(Request $request)
     {
+        if (!auth()->user()->can('territory.create')) {
+        abort(403, 'You do not have permission to territory create.');
+        }         
         $validated = $request->validate([
             'sub_district_id' => 'required|exists:sub_districts,id',
             'name' => 'required|string|max:150',
@@ -66,6 +72,9 @@ class TerritoryController extends Controller
 
     public function show($id)
     {
+        if (!auth()->user()->can('territory.edit')) {
+        abort(403, 'You do not have permission to territory edit.');
+        }         
         return response()->json([
             'status' => 200,
             'data' => Territory::with([
@@ -77,6 +86,9 @@ class TerritoryController extends Controller
 
     public function update(Request $request, $id)
     {
+        if (!auth()->user()->can('territory.edit')) {
+        abort(403, 'You do not have permission to territory edit.');
+        }         
         $territory = Territory::findOrFail($id);
 
         $validated = $request->validate([
@@ -96,6 +108,9 @@ class TerritoryController extends Controller
 
     public function destroy($id)
     {
+        if (!auth()->user()->can('territory.delete')) {
+        abort(403, 'You do not have permission to territory delete.');
+        }         
         Territory::findOrFail($id)->delete();
 
         return response()->json([

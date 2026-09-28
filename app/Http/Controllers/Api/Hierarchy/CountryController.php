@@ -10,6 +10,9 @@ class CountryController extends Controller
     // GET /countries
     public function index()
     {
+        if (!auth()->user()->can('country.view')) {
+        abort(403, 'You do not have permission to country view.');
+        }         
         $countries = Country::latest()->get();
 
         return response()->json([
@@ -21,6 +24,9 @@ class CountryController extends Controller
     // POST /countries
     public function store(Request $request)
     {
+        if (!auth()->user()->can('country.create')) {
+        abort(403, 'You do not have permission to country create.');
+        }         
         $validated = $request->validate([
             'name' => 'required|string|max:150',
             'code' => 'nullable|string|max:10|unique:countries,code',
@@ -39,6 +45,9 @@ class CountryController extends Controller
     // GET /countries/{id}
     public function show($id)
     {
+        if (!auth()->user()->can('country.edit')) {
+        abort(403, 'You do not have permission to country edit.');
+        }         
         $country = Country::with('regions')->findOrFail($id);
 
         return response()->json([
@@ -50,6 +59,9 @@ class CountryController extends Controller
     // PUT /countries/{id}
     public function update(Request $request, $id)
     {
+        if (!auth()->user()->can('country.edit')) {
+        abort(403, 'You do not have permission to country edit.');
+        } 
         $country = Country::findOrFail($id);
 
         $validated = $request->validate([
@@ -70,6 +82,9 @@ class CountryController extends Controller
     // DELETE /countries/{id}
     public function destroy($id)
     {
+        if (!auth()->user()->can('country.delete')) {
+        abort(403, 'You do not have permission to countyr delete.');
+        }         
         $country = Country::findOrFail($id);
 
         $country->delete();

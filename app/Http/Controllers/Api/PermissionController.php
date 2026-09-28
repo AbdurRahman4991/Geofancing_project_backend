@@ -15,6 +15,9 @@ class PermissionController extends Controller
      */
     public function index()
     {
+        if (!auth()->user()->can('permission.view')) {
+        abort(403, 'You do not have permission to permission view.');
+        }         
         $permissions = Permission::select('id', 'name', 'guard_name')
             ->orderBy('name')
             ->get();
@@ -30,6 +33,9 @@ class PermissionController extends Controller
      */
     public function store(Request $request)
     {
+        if (!auth()->user()->can('permission.create')) {
+        abort(403, 'You do not have permission to permission create.');
+        }         
         $request->validate([
             'name' => [
                 'required',
@@ -55,6 +61,9 @@ class PermissionController extends Controller
      */
     public function show(Permission $permission)
     {
+        if (!auth()->user()->can('permission.edit')) {
+        abort(403, 'You do not have permission to permission edit.');
+        }         
         return response()->json([
             'status' => true,
             'data' => $permission
@@ -66,6 +75,9 @@ class PermissionController extends Controller
      */
     public function update(Request $request, Permission $permission)
     {
+        if (!auth()->user()->can('permission.edit')) {
+        abort(403, 'You do not have permission to permission edit.');
+        }         
         $request->validate([
             'name' => [
                 'required',
@@ -90,6 +102,9 @@ class PermissionController extends Controller
      */
     public function destroy(Permission $permission)
     {
+        if (!auth()->user()->can('permission.delete')) {
+        abort(403, 'You do not have permission to permission delete.');
+        }         
         $permission->delete();
 
         return response()->json([
@@ -116,21 +131,11 @@ class PermissionController extends Controller
         ]);
     }
 
-    // public function assignPermission(Request $request, Role $role)
-    // {       
-    //     $request->validate([
-    //         'permissions' => 'required|array'
-    //     ]);
-
-    //     $role->syncPermissions($request->permissions);
-
-    //     return response()->json([
-    //         'status' => true,
-    //         'message' => 'Permissions assigned successfully'
-    //     ]);
-    // }
     public function assignPermission(Request $request, Role $role)
     {
+        if (!auth()->user()->can('permission.edit')) {
+        abort(403, 'You do not have permission to permission edit.');
+        }         
         $request->validate([
             'permissions' => 'required|array',
             'permissions.*' => 'integer|exists:permissions,id',

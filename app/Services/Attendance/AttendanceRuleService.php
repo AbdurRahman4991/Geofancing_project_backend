@@ -5,15 +5,21 @@ namespace App\Services\Attendance;
 use App\Models\AttendanceRule;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
+use App\Traits\CompanyScoped;
 
 class AttendanceRuleService
 {
-public function index(Request $request)
+    use CompanyScoped;
+    public function index(Request $request)
     {
+        if (!auth()->user()->can('attendance-role.view')) {
+        abort(403, 'You do not have permission to view attendance role view.');
+        }
         $query = AttendanceRule::with([
             'company:id,company_name',
             'user:id,name'
         ]);
+        $this->applyCompanyScope($query);
 
         // 🔍 Search
         if ($request->filled('search')) {
@@ -37,6 +43,9 @@ public function index(Request $request)
 
     public function store(Request $request)
     {
+        if (!auth()->user()->can('attendance-role.create')) {
+        abort(403, 'You do not have permission to create  attendance role.');
+        }
         $attendanceRule = AttendanceRule::create($request->only([
             'user_id',
             'company_id',
@@ -52,12 +61,18 @@ public function index(Request $request)
 
     public function show($id)
     {
+        if (!auth()->user()->can('attendance-role.edit')) {
+        abort(403, 'You do not have permission to edit attendance role.');
+        }        
         return AttendanceRule::with(['company:id,company_name', 'user:id,name'])
             ->findOrFail($id);
     }
 
     public function update(Request $request, $id)
     {
+        if (!auth()->user()->can('attendance-role.edit')) {
+        abort(403, 'You do not have permission to view  attendance role.');
+        }
         $attendanceRule = AttendanceRule::findOrFail($id);
 
         $attendanceRule->update($request->only([

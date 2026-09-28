@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Services\Geofence\GeofeneService;
 use App\Services\Hierarchy\HierarchyAccessService;
 use App\Models\Geofence;
+use App\Traits\CompanyScoped;
 
 class GeofenceController extends Controller
 {
@@ -19,80 +20,48 @@ class GeofenceController extends Controller
         $this->hierarchyAccessService = $hierarchyAccessService;
         
     }
-
+    use CompanyScoped;
     // public function index(Request $request)
     // {
     //     return $this->service->index($request);
     // }
     public function index(Request $request)
-    {
-        $query = Geofence::with([
-            'company:id,company_name',
-            'area:id,name,territory_id',
-        ]);
+{
+    $query = Geofence::with([
+        'company:id,company_name',
+        'area:id,name,territory_id',
+    ]);
 
-        /**
-         * Super Admin can see everything.
-         */
-        if (auth()->user()->hasRole('super-admin')) {
+    // Hierarchy access
+    $this->hierarchyAccessService
+        ->applyGeofenceAccess($query);
 
-            if ($request->filled('area_id')) {
-                $query->where(
-                    'area_id',
-                    $request->area_id
-                );
-            }
+    if ($request->filled('search')) {
+        $search = $request->search;
 
-            if ($request->filled('search')) {
-
-                $search = $request->search;
-
-                $query->where(function ($q) use ($search) {
-
-                    $q->where(
-                        'firm_name',
-                        'like',
-                        "%{$search}%"
-                    );
-
-                    $q->orWhereHas('area', function ($areaQuery) use ($search) {
-
-                        $areaQuery->where(
-                            'name',
-                            'like',
-                            "%{$search}%"
-                        );
-
-                    });
+        $query->where(function ($q) use ($search) {
+            $q->where('firm_name', 'like', "%{$search}%")
+                ->orWhereHas('area', function ($areaQuery) use ($search) {
+                    $areaQuery->where('name', 'like', "%{$search}%");
                 });
-            }
-
-        } else {
-
-            /**
-             * Apply hierarchy restriction.
-             *
-             * Area Manager     → Area
-             * Territory Manager → Territory
-             * Region Manager   → Region
-             * etc.
-             */
-            $this->hierarchyAccessService
-                ->applyGeofenceAccess($query);
-        }
-
-        $pagination = $query
-            ->latest()
-            ->paginate(
-                $request->per_page ?? 10
-            );
-
-        return response()->json([
-            'status' => 200,
-            'message' => 'Geofence list retrieved successfully',
-            'data' => $pagination,
-        ]);
+        });
     }
+
+    if ($request->filled('area_id')) {
+        $query->where('area_id', $request->area_id);
+    }
+
+    return response()->json([
+        'status' => 200,
+        'message' => 'Geofence list retrieved successfully',
+        'data' => $query
+            ->latest()
+            ->paginate($request->per_page ?? 10),
+    ]);
+}
+
+
+
 
     public function store(Request $request)
     {

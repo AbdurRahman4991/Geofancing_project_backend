@@ -10,6 +10,9 @@ class RegionController extends Controller
 {
     public function index()
     {
+        if (!auth()->user()->can('region.view')) {
+        abort(403, 'You do not have permission to region view.');
+        }        
         $regions = Region::with('country')->latest()->get();
 
         return response()->json([
@@ -20,6 +23,9 @@ class RegionController extends Controller
 
     public function store(Request $request)
     {
+        if (!auth()->user()->can('region.create')) {
+        abort(403, 'You do not have permission to region create.');
+        }         
         $validated = $request->validate([
             'country_id' => 'required|exists:countries,id',
             'name' => 'required|string|max:150',
@@ -37,6 +43,9 @@ class RegionController extends Controller
 
     public function show($id)
     {
+        if (!auth()->user()->can('region.edit')) {
+        abort(403, 'You do not have permission to region edit.');
+        }         
         $region = Region::with([
             'country',
             'zones'
@@ -50,6 +59,9 @@ class RegionController extends Controller
 
     public function update(Request $request, $id)
     {
+        if (!auth()->user()->can('region.edit')) {
+        abort(403, 'You do not have permission to region edit.');
+        }         
         $region = Region::findOrFail($id);
 
         $validated = $request->validate([
@@ -69,6 +81,9 @@ class RegionController extends Controller
 
     public function destroy($id)
     {
+        if (!auth()->user()->can('region.delete')) {
+        abort(403, 'You do not have permission to region delete.');
+        }         
         $region = Region::findOrFail($id);
 
         $region->delete();

@@ -4,6 +4,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use App\Scopes\CompanyScope;
+use Illuminate\Database\Eloquent\Builder;
 
 class Geofence extends Model implements HasMedia
 {
@@ -22,7 +24,10 @@ class Geofence extends Model implements HasMedia
     protected $appends = [
         'image_url',
     ];
-
+    protected static function booted(): void
+    {
+        static::addGlobalScope(new CompanyScope);
+    }
     public function company()
     {
         return $this->belongsTo(Company::class);

@@ -18,6 +18,9 @@ class EmployeeHierarchyAssignController extends Controller
 
     public function index(Request $request)
     {
+        if (!auth()->user()->can('employee-hierarchy-assign.view')) {
+        abort(403, 'You do not have permission to employee-hierarchy-assign view.');
+        } 
         $assignments = $this->service->getAll(
             $request->all()
         );
@@ -31,6 +34,9 @@ class EmployeeHierarchyAssignController extends Controller
 
     public function store(Request $request)
     {
+        if (!auth()->user()->can('employee-hierarchy-assign.create')) {
+        abort(403, 'You do not have permission to employee-hierarchy-assign create.');
+        }         
         $validated = $request->validate([
             'user_id' => ['required', 'integer', 'exists:users,id'],
             'country_id' => ['nullable', 'integer', 'exists:countries,id'],
@@ -56,6 +62,9 @@ class EmployeeHierarchyAssignController extends Controller
 
     public function show(int $id)
     {
+        if (!auth()->user()->can('employee-hierarchy-assign.edit')) {
+        abort(403, 'You do not have permission to employee-hierarchy-assign edit.');
+        }         
         $assignment = $this->service->getById($id);
 
         if (!$assignment) {
@@ -73,6 +82,10 @@ class EmployeeHierarchyAssignController extends Controller
 
     public function update(Request $request, int $id)
     {
+        if (!auth()->user()->can('employee-hierarchy-assign.edit')) {
+        abort(403, 'You do not have permission to employee-hierarchy-assign edit.');
+        }
+
         $validated = $request->validate([
             'user_id' => ['required', 'integer', 'exists:users,id'],
             'country_id' => ['nullable', 'integer', 'exists:countries,id'],
@@ -105,6 +118,9 @@ class EmployeeHierarchyAssignController extends Controller
 
     public function destroy(int $id)
     {
+        if (!auth()->user()->can('employee-hierarchy-assign.delete')) {
+        abort(403, 'You do not have permission to employee-hierarchy-assign delete.');
+        }        
         $deleted = $this->service->delete($id);
 
         if (!$deleted) {

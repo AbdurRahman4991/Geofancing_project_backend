@@ -6,6 +6,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Gate;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -26,6 +27,10 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(300)->by(
                 $request->user()?->id ?: $request->ip()
             );
+        });
+
+        Gate::before(function ($user, $ability) {
+            return $user->hasRole('Super-Admin') ? true : null;
         });
     }
 }

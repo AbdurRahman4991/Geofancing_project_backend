@@ -119,6 +119,14 @@ class HierarchyAccessService
         Builder $query,
         ?EmployeeHierarchyAssignment $assignment = null
     ): Builder {
+        // Super Admin → hierarchy restriction নেই
+        if (Auth::user()?->hasRole('Super-Admin')) {
+            return $query;
+        }
+
+        if (Auth::user()?->hasRole('Company Admin')) {
+            return $query;
+        }
         $assignment ??= $this->currentAssignment();
 
         if (!$assignment) {

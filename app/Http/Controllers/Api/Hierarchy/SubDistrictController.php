@@ -13,6 +13,9 @@ class SubDistrictController extends Controller
      */
     public function index(Request $request)
     {
+        if (!auth()->user()->can('sub-district.view')) {
+        abort(403, 'You do not have permission to sub-district view.');
+        }         
         $subDistricts = SubDistrict::with('district')
 
             // Filter by district_id
@@ -50,6 +53,9 @@ class SubDistrictController extends Controller
 
     public function store(Request $request)
     {
+        if (!auth()->user()->can('sub-district.create')) {
+        abort(403, 'You do not have permission to sub-district create.');
+        }          
         $validated = $request->validate([
             'district_id' => 'required|exists:districts,id',
             'name' => 'required|string|max:150',
@@ -67,6 +73,9 @@ class SubDistrictController extends Controller
 
     public function show($id)
     {
+        if (!auth()->user()->can('sub-district.edit')) {
+        abort(403, 'You do not have permission to sub-district edit.');
+        }          
         return response()->json([
             'status' => 200,
             'data' => SubDistrict::with([
@@ -78,6 +87,9 @@ class SubDistrictController extends Controller
 
     public function update(Request $request, $id)
     {
+        if (!auth()->user()->can('sub-district.edit')) {
+        abort(403, 'You do not have permission to sub-district edit.');
+        }          
         $subDistrict = SubDistrict::findOrFail($id);
 
         $validated = $request->validate([
@@ -97,6 +109,9 @@ class SubDistrictController extends Controller
 
     public function destroy($id)
     {
+        if (!auth()->user()->can('sub-district.delete')) {
+        abort(403, 'You do not have permission to sub-district delete.');
+        }          
         SubDistrict::findOrFail($id)->delete();
 
         return response()->json([

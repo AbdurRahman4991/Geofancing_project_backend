@@ -13,6 +13,9 @@ class DivisionController extends Controller
      */
 public function index(Request $request)
 {
+    if (!auth()->user()->can('division.view')) {
+    abort(403, 'You do not have permission to division view.');
+    }      
     $divisions = Division::with('zone')
 
         // ==============================
@@ -61,6 +64,9 @@ public function index(Request $request)
 
     public function store(Request $request)
     {
+        if (!auth()->user()->can('division.create')) {
+        abort(403, 'You do not have permission to division create.');
+        }         
         $validated = $request->validate([
             'zone_id' => 'required|exists:zones,id',
             'name' => 'required|string|max:150',
@@ -78,6 +84,9 @@ public function index(Request $request)
 
     public function show($id)
     {
+        if (!auth()->user()->can('division.edit')) {
+        abort(403, 'You do not have permission to division edit.');
+        }         
         return response()->json([
             'status' => 200,
             'data' => Division::with([
@@ -89,6 +98,9 @@ public function index(Request $request)
 
     public function update(Request $request, $id)
     {
+        if (!auth()->user()->can('division.edit')) {
+        abort(403, 'You do not have permission to division edit.');
+        }         
         $division = Division::findOrFail($id);
 
         $validated = $request->validate([
@@ -108,6 +120,9 @@ public function index(Request $request)
 
     public function destroy($id)
     {
+        if (!auth()->user()->can('division.delte')) {
+        abort(403, 'You do not have permission to division delete.');
+        } 
         Division::findOrFail($id)->delete();
 
         return response()->json([

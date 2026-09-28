@@ -5,13 +5,16 @@ namespace App\Services\Company;
 use App\Models\Company;
 use Illuminate\Http\Request;
 
+
 class CompanyService
 {
 
     public function all(Request $request)
     {
-
-        $query = Company::query();
+        if (!auth()->user()->can('company.view')) {
+            abort(403, 'You do not have permission to view employees.');
+        }
+        $query = Company::query();    
 
         // Add search filter
         if ($request->has('search') && !empty($request->search)) {
@@ -44,7 +47,10 @@ class CompanyService
 
     public function store(Request $request)
     {
-        $company = Company::create($request->only(['company_name', 'email', 'phone', 'address','details','package','billing_cycle']));
+        if (!auth()->user()->can('company.create')) {
+            abort(403, 'You do not have permission to view employees.');
+        }
+        $company = Company::create($request->only(['company_name', 'email', 'phone', 'address','details','package','billing_cycle','status']));
 
         if ($request->hasFile('avatar')) {
             $company->addMediaFromRequest('avatar')->toMediaCollection('avatar');
@@ -58,6 +64,9 @@ class CompanyService
 
     public function show($id)
     {
+        if (!auth()->user()->can('company.edit')) {
+        abort(403, 'You do not have permission to view employees.');
+        }
         $company = Company::findOrFail($id);
 
         // Add avatar URL (just like in all() method)
@@ -69,12 +78,15 @@ class CompanyService
 
     public function update(Request $request, $id)
     {
-      
+        if (!auth()->user()->can('company.edit')) {
+        abort(403, 'You do not have permission to view employees.');
+        }
         $company = Company::findOrFail($id);
 
-        $company->update($request->only(['company_name', 'email', 'phone', 'address']));
+        $company->update($request->only([
+            'company_name', 'email', 'phone', 'address', 'details','package','billing_cycle','status'
+            ]));
 
-    //     // ✅ যদি নতুন avatar আপলোড হয়, পুরনোটা ডিলিট করে নতুন যোগ করো
         if ($request->hasFile('avatar')) {
             $company->clearMediaCollection('avatar');
             $company->addMediaFromRequest('avatar')->toMediaCollection('avatar');
@@ -86,7 +98,7 @@ class CompanyService
     public function destroy($id)
     {
         $company = Company::findOrFail($id);
-        $company->clearMediaCollection('avatar'); // ✅ Optional: ছবিও মুছে ফেলবে
+        $company->clearMediaCollection('avatar'); 
         $company->delete();
 
         return true;

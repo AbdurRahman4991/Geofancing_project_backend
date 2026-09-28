@@ -4,60 +4,82 @@ use Illuminate\Support\Facades\Http;
 use App\Models\Employee;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use App\Traits\CompanyScoped;
 
 class EmployeeService
 {
-        
-   public function index(Request $request)
-    {
-        if (!auth()->user()->can('employee.view')) {
-            abort(403, 'You do not have permission to view employees.');
-        }
-        $cacheKey = 'employees_' . md5(json_encode([
-            'search'     => $request->search,
-            'department' => $request->department,
-            'page'       => $request->page,
-            'per_page'   => $request->per_page,
-            'orderBy'    => $request->orderBy,
-            'order'      => $request->order,
-        ]));
+    use CompanyScoped;       
 
-        $employees = Cache::remember($cacheKey, now()->addMinutes(10), function () use ($request) {
-
-            $query = Employee::with('company:id,company_name');
-
-            // Search
-            if ($request->filled('search')) {
-                $search = $request->search;
-
-                $query->where(function ($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('employee_id', 'like', "%{$search}%")
-                    ->orWhere('phone', 'like', "%{$search}%");
-                });
-            }
-
-            // Department Filter
-            if ($request->filled('department')) {
-                $query->where('department', 'like', "%{$request->department}%");
-            }
-
-            // Sorting
-            $orderBy = $request->get('orderBy', 'id');
-            $order   = $request->get('order', 'desc');
-
-            $query->orderBy($orderBy, $order);
-
-            // Pagination
-            return $query->paginate($request->get('per_page', 10));
-        });
-
-        return response()->json([
-            'status'  => 200,
-            'message' => 'Employee list retrieved successfully',
-            'data'    => $employees,
-        ]);
+public function index(Request $request)
+{
+    if (!auth()->user()->can('employee.view')) {
+        abort(403, 'You do not have permission to view employees.');
     }
+
+    $query = Employee::with([
+        'company:id,company_name'
+    ]);
+
+    // Login user's company অনুযায়ী filter
+    $this->applyCompanyScope($query);
+
+    // 🔍 Search
+    if ($request->filled('search')) {
+        $search = $request->search;
+
+        $query->where(function ($q) use ($search) {
+            $q->where('name', 'like', "%{$search}%")
+                ->orWhere('employee_id', 'like', "%{$search}%")
+                ->orWhere('phone', 'like', "%{$search}%");
+        });
+    }
+
+    // 🏢 Department Filter
+    if ($request->filled('department')) {
+        $query->where(
+            'department',
+            'like',
+            "%{$request->department}%"
+        );
+    }
+
+    // ↕️ Sorting
+    $allowedSortColumns = [
+        'id',
+        'name',
+        'employee_id',
+        'phone',
+        'department',
+        'created_at',
+    ];
+
+    $orderBy = $request->get('orderBy', 'id');
+
+    if (!in_array($orderBy, $allowedSortColumns)) {
+        $orderBy = 'id';
+    }
+
+    $order = strtolower(
+        $request->get('order', 'desc')
+    );
+
+    if (!in_array($order, ['asc', 'desc'])) {
+        $order = 'desc';
+    }
+
+    $query->orderBy($orderBy, $order);
+
+    // 📄 Pagination
+    $employees = $query->paginate(
+        $request->get('per_page', 10)
+    );
+
+    return response()->json([
+        'status'  => 200,
+        'message' => 'Employee list retrieved successfully',
+        'data'    => $employees,
+    ]);
+}
 
     public function store(Request $request)
     {
@@ -145,7 +167,7 @@ class EmployeeService
     }
     public function show($id)
     {
-        if (!auth()->user()->can('employee.view')) {
+        if (!auth()->user()->can('employee.edit')) {
         abort(403, 'You do not have permission to view employees.');
         }
         return Employee::with(['company:id,company_name'])->findOrFail($id);
