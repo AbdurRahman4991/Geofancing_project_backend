@@ -15,11 +15,11 @@ return new class extends Migration
             $table->id();
             $table->string('name')->nullable();
             $table->string('email')->nullable();
-            $table->string('phone')->nullable();
-            //$table->string('employee_id')->unique();
+            $table->string('phone')->nullable();            
             $table->foreignId('employee_id')
             ->constrained('employees')
             ->onDelete('cascade');
+            $table->string('company_id')->nullable();
             $table->string('device_id')->nullable();
             $table->string('otp')->nullable();
             $table->timestamp('otp_expires_at')->nullable();

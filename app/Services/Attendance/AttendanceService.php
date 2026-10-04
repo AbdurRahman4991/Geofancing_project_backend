@@ -335,30 +335,54 @@ class AttendanceService
             abort(403, 'You do not have permission to attendance history.');
         }         
         $user = Auth::user();
-
         $query = Attendance::query();
 
-        // Role Wise Data
-        if ($user->hasRole('super-admin')) {
-
-            // User Filter
+        if ($user->hasRole('Super-Admin')) {
+            // All companies. Optional user filter and search are allowed.
             if ($request->filled('user_id')) {
                 $query->where('user_id', $request->user_id);
             }
 
-            // Search by Name / Employee ID
             if ($request->filled('search')) {
                 $search = $request->search;
 
                 $query->whereHas('user', function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('employee_id', 'like', "%{$search}%");
+                        ->orWhere('employee_id', 'like', "%{$search}%");
                 });
             }
+        } elseif ($user->hasRole('Company Admin')) {
+            $companyId = $user->employee?->company_id;
 
+            if (!$companyId) {
+                $query->whereRaw('1 = 0');
+            } else {
+                $query->whereHas('user.employee', function ($q) use ($companyId) {
+                    $q->where('company_id', $companyId);
+                });
+            }
+        } elseif ($user->hasRole('territory-manager')) {
+            $territoryId = $user->hierarchyAssignment?->territory_id;
+
+            if (!$territoryId) {
+                $query->whereRaw('1 = 0');
+            } else {
+                $query->whereHas('user.hierarchyAssignment', function ($q) use ($territoryId) {
+                    $q->where('territory_id', $territoryId);
+                });
+            }
+        } elseif ($user->hasRole('area-manager')) {
+            $areaId = $user->hierarchyAssignment?->area_id;
+
+            if (!$areaId) {
+                $query->whereRaw('1 = 0');
+            } else {
+                $query->whereHas('user.hierarchyAssignment', function ($q) use ($areaId) {
+                    $q->where('area_id', $areaId);
+                });
+            }
         } else {
-
-            // Employee শুধুমাত্র নিজের attendance দেখবে
+            // Employees and any unrecognized roles see only their own attendance.
             $query->where('user_id', $user->id);
         }
 

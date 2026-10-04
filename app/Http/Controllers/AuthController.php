@@ -35,27 +35,46 @@ class AuthController extends Controller
     //     ], 201);
     // }
 
-    public function register(Request $request)
-    {
-        $data = $request->validate([
-            'employee_id' => 'required|exists:employees,employee_id|unique:users,employee_id',
-            'email'      => 'required|email|unique:users,email',
-            'password'   => 'required|string|min:8|confirmed',
-        ]);
-        
-        $employee = Employee::where('employee_id', $data['employee_id'])->first();        
-        $user = User::create([
-            'employee_id' => $employee->id,
-            'email'       => $data['email'],
-            'password'    => Hash::make($data['password']),
-        ]);
+public function register(Request $request)
+{
+    $data = $request->validate([
+        'employee_id' => 'required|exists:employees,employee_id',
+        'email'       => 'required|email|unique:users,email',
+        'password'    => 'required|string|min:8|confirmed',
+    ]);
 
-        event(new Registered($user));
+    $employee = Employee::where(
+        'employee_id',
+        $data['employee_id']
+    )->first();
 
+    if (!$employee) {
         return response()->json([
-            'message' => 'Registration successful.'
-        ], 201);
+            'message' => 'Employee not found.',
+            'employee_id' => $data['employee_id'],
+        ], 404);
     }
+
+    if (User::where('employee_id', $employee->id)->exists()) {
+        return response()->json([
+            'message' => 'This employee already has a user account.',
+        ], 422);
+    }
+
+    $user = User::create([
+        'employee_id' => $employee->id,
+        'email'       => $data['email'],
+        'password'    => Hash::make($data['password']),
+    ]);
+
+    event(new Registered($user));
+
+    return response()->json([
+        'message' => 'Registration successful.',
+        'user' => $user,
+    ], 201);
+}
+
 
     // public function register(Request $request)
     // {
@@ -351,7 +370,7 @@ class AuthController extends Controller
     }
 
     public function user(Request $request)
-    {
+    {       
         return response()->json($request->user());
     }
 }

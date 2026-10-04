@@ -1,7 +1,5 @@
 <?php
 
-
-
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
@@ -12,224 +10,251 @@ class AdminUserSeeder extends Seeder
 {
     public function run(): void
     {
-        $users = [
-            [
-                'name' => 'Super Admin',
-                'email' => 'admin@gmail.com',
-                'phone' => '01814874980',
-                'employee_id' => 'EMP-1001',
-                'role' => 'super-admin',
-            ],
+        /*
+        |--------------------------------------------------------------------------
+        | Get All Employees
+        |--------------------------------------------------------------------------
+        */
 
-            [
-                'name' => 'Country Manager',
-                'email' => 'country.manager@gmail.com',
-                'phone' => '01814874981',
-                'employee_id' => 'EMP-1002',
-                'role' => 'country-manager',
-            ],
+        $employees = Employee::all();
 
-            [
-                'name' => 'Regional Manager',
-                'email' => 'regional.manager@gmail.com',
-                'phone' => '01814874982',
-                'employee_id' => 'EMP-1003',
-                'role' => 'regional-manager',
-            ],
+        if ($employees->isEmpty()) {
+            $this->command->error(
+                'No employees found. Please run EmployeeSeeder first.'
+            );
 
-            [
-                'name' => 'Zone Manager',
-                'email' => 'zone.manager@gmail.com',
-                'phone' => '01814874983',
-                'employee_id' => 'EMP-1004',
-                'role' => 'zone-manager',
-            ],
+            return;
+        }
 
-            [
-                'name' => 'Division Manager',
-                'email' => 'division.manager@gmail.com',
-                'phone' => '01814874984',
-                'employee_id' => 'EMP-1005',
-                'role' => 'division-manager',
-            ],
+        /*
+        |--------------------------------------------------------------------------
+        | Counters
+        |--------------------------------------------------------------------------
+        */
 
-            [
-                'name' => 'District Manager',
-                'email' => 'district.manager@gmail.com',
-                'phone' => '01814874985',
-                'employee_id' => 'EMP-1006',
-                'role' => 'district-manager',
-            ],
+        $userCount = 0;
+        $skippedCount = 0;
 
-            [
-                'name' => 'Sub District Manager',
-                'email' => 'subdistrict.manager@gmail.com',
-                'phone' => '01814874986',
-                'employee_id' => 'EMP-1007',
-                'role' => 'sub-district-manager',
-            ],
+        /*
+        |--------------------------------------------------------------------------
+        | Create / Update Users
+        |--------------------------------------------------------------------------
+        */
 
-            [
-                'name' => 'Territory Manager',
-                'email' => 'territory.manager@gmail.com',
-                'phone' => '01814874987',
-                'employee_id' => 'EMP-1008',
-                'role' => 'territory-manager',
-            ],
+        foreach ($employees as $employee) {
 
-            [
-                'name' => 'Area Officer',
-                'email' => 'area.officer@gmail.com',
-                'phone' => '01814874988',
-                'employee_id' => 'EMP-1009',
-                'role' => 'area-officer',
-            ],
-        ];
+            /*
+            |--------------------------------------------------------------------------
+            | Skip Super Admin
+            |--------------------------------------------------------------------------
+            |
+            | Super Admin is created separately by SuperAdminSeeder.
+            |
+            */
 
-        foreach ($users as $data) {
+            if ($employee->designation === 'Super Admin') {
 
-            // Employee-এর employee_id দিয়ে Employee খুঁজে বের করছি
-            $employee = Employee::where(
-                'employee_id',
-                $data['employee_id']
-            )->firstOrFail();
+                $this->command->line(
+                    "Skipped Super Admin: {$employee->name}"
+                );
 
-            $role = $data['role'];
+                $skippedCount++;
 
-            unset($data['role']);
+                continue;
+            }
 
-            // Employee-এর actual database ID ব্যবহার হবে
-            $data['employee_id'] = $employee->id;
+            /*
+            |--------------------------------------------------------------------------
+            | Skip Field Employee
+            |--------------------------------------------------------------------------
+            |
+            | Field Employee does not have a system role/user.
+            |
+            */
+
+            if ($employee->designation === 'Field Employee') {
+
+                $this->command->line(
+                    "Skipped Field Employee: {$employee->name}"
+                );
+
+                $skippedCount++;
+
+                continue;
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Get Role
+            |--------------------------------------------------------------------------
+            */
+
+            $role = $this->getRoleByDesignation(
+                $employee->designation
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Generate Email
+            |--------------------------------------------------------------------------
+            */
+
+            $email = strtolower(
+                str_replace(' ', '.', trim($employee->name))
+            ) . '.' . $employee->company_id . '@example.com';
+
+            /*
+            |--------------------------------------------------------------------------
+            | Create / Update User
+            |--------------------------------------------------------------------------
+            */
 
             $user = User::updateOrCreate(
                 [
-                    'email' => $data['email'],
+                    'employee_id' => $employee->id,
                 ],
                 [
-                    'name' => $data['name'],
-                    'phone' => $data['phone'],
-                    'employee_id' => $data['employee_id'],
+                    'name' => $employee->name,
+                    'email' => $email,
+                    'phone' => $employee->phone,
+                    'employee_id' => $employee->id,
+                    'company_id' => $employee->company_id,
                     'password' => bcrypt('password'),
                 ]
             );
 
-            $user->syncRoles([$role]);
+            /*
+            |--------------------------------------------------------------------------
+            | Assign Role
+            |--------------------------------------------------------------------------
+            */
+
+            $user->syncRoles([
+                $role
+            ]);
+
+            $userCount++;
+
+            /*
+            |--------------------------------------------------------------------------
+            | Console Output
+            |--------------------------------------------------------------------------
+            */
+
+            $this->command->line(
+                "User created/updated: {$employee->name} → {$role}"
+            );
         }
 
-        $this->command->info('Admin users seeded successfully.');
+        /*
+        |--------------------------------------------------------------------------
+        | Summary
+        |--------------------------------------------------------------------------
+        */
+
+        $this->command->newLine();
+
+        $this->command->info(
+            "{$userCount} users created/updated successfully."
+        );
+
+        $this->command->info(
+            "{$skippedCount} employees skipped."
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Get Role By Employee Designation
+    |--------------------------------------------------------------------------
+    */
+
+    private function getRoleByDesignation(?string $designation): string
+    {
+        return match ($designation) {
+
+            /*
+            |--------------------------------------------------------------------------
+            | Country
+            |--------------------------------------------------------------------------
+            */
+
+            'Country Manager'
+                => 'country-manager',
+
+            /*
+            |--------------------------------------------------------------------------
+            | Region
+            |--------------------------------------------------------------------------
+            */
+
+            'Regional Manager'
+                => 'regional-manager',
+
+            /*
+            |--------------------------------------------------------------------------
+            | Zone
+            |--------------------------------------------------------------------------
+            */
+
+            'Zone Manager'
+                => 'zone-manager',
+
+            /*
+            |--------------------------------------------------------------------------
+            | Division
+            |--------------------------------------------------------------------------
+            */
+
+            'Division Manager'
+                => 'division-manager',
+
+            /*
+            |--------------------------------------------------------------------------
+            | District
+            |--------------------------------------------------------------------------
+            */
+
+            'District Manager'
+                => 'district-manager',
+
+            /*
+            |--------------------------------------------------------------------------
+            | Sub District
+            |--------------------------------------------------------------------------
+            */
+
+            'Sub District Manager'
+                => 'sub-district-manager',
+
+            /*
+            |--------------------------------------------------------------------------
+            | Territory
+            |--------------------------------------------------------------------------
+            */
+
+            'Territory Manager'
+                => 'territory-manager',
+
+            /*
+            |--------------------------------------------------------------------------
+            | Area
+            |--------------------------------------------------------------------------
+            */
+
+            'Area Officer'
+                => 'area-officer',
+
+            /*
+            |--------------------------------------------------------------------------
+            | Unknown Designation
+            |--------------------------------------------------------------------------
+            */
+
+            default
+                => throw new \RuntimeException(
+                    "No role mapping found for designation: {$designation}"
+                ),
+        };
     }
 }
-
-
-// namespace Database\Seeders;
-
-// use Illuminate\Database\Seeder;
-// use App\Models\User;
-
-// class AdminUserSeeder extends Seeder
-// {
-//     public function run(): void
-//     {
-//         $users = [
-//             [
-//                 'name' => 'Super Admin',
-//                 'email' => 'admin@gmail.com',
-//                 'phone' => '01814874980',
-//                 'employee_id' => '901825',
-//                 'role' => 'super-admin',
-//             ],
-
-//             [
-//                 'name' => 'Country Manager',
-//                 'email' => 'country.manager@gmail.com',
-//                 'phone' => '01814874981',
-//                 'employee_id' => '901826',
-//                 'role' => 'country-manager',
-//             ],
-
-//             [
-//                 'name' => 'Regional Manager',
-//                 'email' => 'regional.manager@gmail.com',
-//                 'phone' => '01814874982',
-//                 'employee_id' => '901827',
-//                 'role' => 'regional-manager',
-//             ],
-
-//             [
-//                 'name' => 'Zone Manager',
-//                 'email' => 'zone.manager@gmail.com',
-//                 'phone' => '01814874983',
-//                 'employee_id' => '901828',
-//                 'role' => 'zone-manager',
-//             ],
-
-//             [
-//                 'name' => 'Division Manager',
-//                 'email' => 'division.manager@gmail.com',
-//                 'phone' => '01814874984',
-//                 'employee_id' => '901829',
-//                 'role' => 'division-manager',
-//             ],
-
-//             [
-//                 'name' => 'District Manager',
-//                 'email' => 'district.manager@gmail.com',
-//                 'phone' => '01814874985',
-//                 'employee_id' => '901830',
-//                 'role' => 'district-manager',
-//             ],
-
-//             [
-//                 'name' => 'Sub District Manager',
-//                 'email' => 'subdistrict.manager@gmail.com',
-//                 'phone' => '01814874986',
-//                 'employee_id' => '901831',
-//                 'role' => 'sub-district-manager',
-//             ],
-
-//             [
-//                 'name' => 'Territory Manager',
-//                 'email' => 'territory.manager@gmail.com',
-//                 'phone' => '01814874987',
-//                 'employee_id' => '901832',
-//                 'role' => 'territory-manager',
-//             ],
-
-//             [
-//                 'name' => 'Area Officer',
-//                 'email' => 'area.officer@gmail.com',
-//                 'phone' => '01814874988',
-//                 'employee_id' => '901833',
-//                 'role' => 'area-officer',
-//             ],
-
-//             [
-//                 'name' => 'Field Employee',
-//                 'email' => 'field.employee@gmail.com',
-//                 'phone' => '01814874989',
-//                 'employee_id' => '901834',
-//                 'role' => 'field-employee',
-//             ],
-//         ];
-
-//         foreach ($users as $data) {
-//             $role = $data['role'];
-
-//             unset($data['role']);
-
-//             $user = User::firstOrCreate(
-//                 ['email' => $data['email']],
-//                 [
-//                     'name' => $data['name'],
-//                     'phone' => $data['phone'],
-//                     'employee_id' => $data['employee_id'],
-//                     'password' => bcrypt('password'),
-//                 ]
-//             );
-
-//             $user->syncRoles([$role]);
-//         }
-//     }
-//}
-
-

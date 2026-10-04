@@ -1,37 +1,5 @@
 <?php
 
-// namespace Database\Seeders;
-
-// use Illuminate\Database\Seeder;
-// use Spatie\Permission\Models\Role;
-// use Spatie\Permission\Models\Permission;
-
-// class RoleSeeder extends Seeder
-// {
-//     public function run(): void
-//     {
-//         $admin = Role::firstOrCreate(['name' => 'super-admin']);
-//         $manager = Role::firstOrCreate(['name' => 'manager']);
-//         $staff = Role::firstOrCreate(['name' => 'staff']);
-
-//         // super-admin gets all permissions
-//         $admin->givePermissionTo(Permission::all());
-
-//         // manager gets limited permissions
-//         $manager->givePermissionTo([
-//             'user.view',
-//             'company.view',
-//             'company.create',
-//             'company.edit',
-//         ]);
-
-//         // staff only view
-//         $staff->givePermissionTo([
-//             'company.view'
-//         ]);
-//     }
-
-
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
@@ -48,35 +16,23 @@ class RoleSeeder extends Seeder
         |--------------------------------------------------------------------------
         */
 
-        $roles = [
-
-            // System Level
-            'super-admin',
-
-            // Country / Region / Zone Management
+        $roles = [            
+            'Super-Admin',
+            'admin',           
             'country-manager',
             'regional-manager',
             'zone-manager',
-
-            // Geographic Management
             'division-manager',
             'district-manager',
             'sub-district-manager',
-
-            // Field Management
             'territory-manager',
             'area-officer',
-            //'farm-officer',
-            'field-employee',
-
-            // General Roles
-            // 'manager',
-            // 'staff',
         ];
 
         foreach ($roles as $role) {
             Role::firstOrCreate([
                 'name' => $role,
+                'guard_name' => 'sanctum',
             ]);
         }
 
@@ -86,23 +42,15 @@ class RoleSeeder extends Seeder
         |--------------------------------------------------------------------------
         */
 
-        $admin = Role::findByName('super-admin');
-
-        $countryManager = Role::findByName('country-manager');
-        $regionalManager = Role::findByName('regional-manager');
-        $zoneManager = Role::findByName('zone-manager');
-
-        $divisionManager = Role::findByName('division-manager');
-        $districtManager = Role::findByName('district-manager');
-        $subDistrictManager = Role::findByName('sub-district-manager');
-
-        $territoryManager = Role::findByName('territory-manager');
-        $areaOfficer = Role::findByName('area-officer');
-        //$farmOfficer = Role::findByName('farm-officer');
-        $fieldEmployee = Role::findByName('field-employee');
-
-        // $manager = Role::findByName('manager');
-        // $staff = Role::findByName('staff');
+        $admin = Role::findByName('Super-Admin', 'sanctum');
+        $countryManager = Role::findByName('country-manager', 'sanctum');
+        $regionalManager = Role::findByName('regional-manager', 'sanctum');
+        $zoneManager = Role::findByName('zone-manager', 'sanctum');
+        $divisionManager = Role::findByName('division-manager', 'sanctum');
+        $districtManager = Role::findByName('district-manager', 'sanctum');
+        $subDistrictManager = Role::findByName('sub-district-manager', 'sanctum');
+        $territoryManager = Role::findByName('territory-manager', 'sanctum');
+        $areaOfficer = Role::findByName('area-officer', 'sanctum');               
 
         /*
         |--------------------------------------------------------------------------
@@ -151,14 +99,11 @@ class RoleSeeder extends Seeder
         $regionalManager->givePermissionTo([
             'user.view',
             'company.view',
-
             'region.view',
             'region.edit',
-
             'zone.view',
             'zone.create',
             'zone.edit',
-
             'division.view',
             'division.create',
             'division.edit',
@@ -290,72 +235,7 @@ class RoleSeeder extends Seeder
             'attendance.view',
             'location.view',
         ]);
-
-        /*
-        |--------------------------------------------------------------------------
-        | Farm Officer
-        |--------------------------------------------------------------------------
-        */
-
-        // $farmOfficer->givePermissionTo([
-        //     'farm.view',
-        //     'farm.create',
-        //     'farm.edit',
-
-        //     'attendance.view',
-        //     'attendance.create',
-
-        //     'location.view',
-        // ]);
-
-        /*
-        |--------------------------------------------------------------------------
-        | Field Employee
-        |--------------------------------------------------------------------------
-        */
-
-        $fieldEmployee->givePermissionTo([
-            'farm.view',
-
-            'attendance.view',
-            'attendance.create',
-
-            'location.view',
-            'location.create',
-        ]);
-
-        /*
-        |--------------------------------------------------------------------------
-        | General Manager
-        |--------------------------------------------------------------------------
-        */
-
-        // $manager->givePermissionTo([
-        //     'user.view',
-        //     'company.view',
-        //     'company.create',
-        //     'company.edit',
-
-        //     'farm.view',
-        //     'farm.create',
-        //     'farm.edit',
-
-        //     'attendance.view',
-        //     'location.view',
-        // ]);
-
-        // /*
-        // |--------------------------------------------------------------------------
-        // | Staff
-        // |--------------------------------------------------------------------------
-        // */
-
-        // $staff->givePermissionTo([
-        //     'company.view',
-        //     'farm.view',
-        //     'attendance.view',
-        //     'location.view',
-        // ]);
+         
     }
 }
 

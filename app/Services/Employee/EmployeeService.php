@@ -4,14 +4,23 @@ use Illuminate\Support\Facades\Http;
 use App\Models\Employee;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use App\Traits\CompanyScoped;
 
 class EmployeeService
 {
-    use CompanyScoped;       
+       
 
 public function index(Request $request)
 {
+//     $user = auth()->user();
+
+// dd([
+//     'user_id' => $user->id,
+//     'roles' => $user->getRoleNames(),
+//     'permissions' => $user->getAllPermissions()->pluck('name'),
+//     'can_employee_view' => $user->can('employee.view'),
+// ]);
+
+   
     if (!auth()->user()->can('employee.view')) {
         abort(403, 'You do not have permission to view employees.');
     }
@@ -20,8 +29,7 @@ public function index(Request $request)
         'company:id,company_name'
     ]);
 
-    // Login user's company অনুযায়ী filter
-    $this->applyCompanyScope($query);
+    // Login user's company অনুযায়ী filter   
 
     // 🔍 Search
     if ($request->filled('search')) {

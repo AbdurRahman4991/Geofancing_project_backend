@@ -13,15 +13,15 @@ class GeofenceSeeder extends Seeder
     {
         /*
         |--------------------------------------------------------------------------
-        | Get Company
+        | Get All Companies
         |--------------------------------------------------------------------------
         */
 
-        $company = Company::first();
+        $companies = Company::orderBy('id')->get();
 
-        if (!$company) {
+        if ($companies->isEmpty()) {
             $this->command->error(
-                'No company found. Please run CompanySeeder first.'
+                'No companies found. Please run CompanySeeder first.'
             );
 
             return;
@@ -29,17 +29,19 @@ class GeofenceSeeder extends Seeder
 
         /*
         |--------------------------------------------------------------------------
-        | Get Areas
+        | Get All Active Areas
         |--------------------------------------------------------------------------
+        |
+        | Area is part of hierarchy.
+        | Area does NOT need company_id.
+        |
         */
 
-        $areas = Area::with(
-            'territory.subDistrict.district.division'
-        )->where('status', true)->get();
+        $areas = Area::where('status', true)->get();
 
         if ($areas->isEmpty()) {
             $this->command->error(
-                'No areas found. Please run BangladeshLocationSeeder and TerritoryAreaSeeder first.'
+                'No active areas found. Please run AreaSeeder first.'
             );
 
             return;
@@ -47,47 +49,82 @@ class GeofenceSeeder extends Seeder
 
         /*
         |--------------------------------------------------------------------------
-        | Create Geofences
+        | Create Geofence Company Wise
         |--------------------------------------------------------------------------
         */
 
-        foreach ($areas as $area) {
+        $totalGeofences = 0;
+
+        foreach ($companies as $company) {
 
             /*
             |--------------------------------------------------------------------------
-            | Generate realistic coordinates
+            | Company ID
             |--------------------------------------------------------------------------
-            |
-            | এখানে demo coordinates ব্যবহার করা হচ্ছে।
-            | Production-এ actual farm/company GPS coordinates ব্যবহার করবে।
-            |
             */
 
-            $latitude = 23.8103000;
-            $longitude = 90.4125000;
+            $companyId = $company->id;
 
             /*
             |--------------------------------------------------------------------------
-            | Create Geofence
+            | Create Geofence for Every Area
             |--------------------------------------------------------------------------
             */
 
-            Geofence::updateOrCreate(
-                [
-                    'company_id' => $company->id,
-                    'area_id' => $area->id,
-                ],
-                [
-                    'firm_name' => $company->name . ' - ' . $area->name,
-                    'latitude' => $latitude,
-                    'longitude' => $longitude,
-                    'radius' => 100,
-                ]
+            foreach ($areas as $area) {
+
+                /*
+                |--------------------------------------------------------------------------
+                | Demo Coordinates
+                |--------------------------------------------------------------------------
+                */
+
+                $latitude = 23.8103000;
+                $longitude = 90.4125000;
+
+                /*
+                |--------------------------------------------------------------------------
+                | Create / Update Geofence
+                |--------------------------------------------------------------------------
+                */
+
+                Geofence::updateOrCreate(
+                    [
+                        'company_id' => $companyId,
+                        'area_id' => $area->id,
+                    ],
+                    [
+                        'firm_name' => $company->company_name . ' - ' . $area->name,
+                        'latitude' => $latitude,
+                        'longitude' => $longitude,
+                        'radius' => 100,
+                    ]
+                );
+
+                $totalGeofences++;
+            }
+
+            $this->command->info(
+                "Geofences seeded for company ID: {$companyId} ({$company->company_name})"
             );
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | Success Message
+        |--------------------------------------------------------------------------
+        */
+
         $this->command->info(
-            $areas->count() . ' geofences created successfully.'
+            "{$totalGeofences} geofences created/updated successfully."
+        );
+
+        $this->command->info(
+            "Total companies: {$companies->count()}"
+        );
+
+        $this->command->info(
+            "Total active areas: {$areas->count()}"
         );
     }
 }

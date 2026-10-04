@@ -10,18 +10,31 @@ class EmployeeSeeder extends Seeder
 {
     public function run(): void
     {
-        $company = Company::first();
+        /*
+        |--------------------------------------------------------------------------
+        | Get All Companies
+        |--------------------------------------------------------------------------
+        */
 
-        if (!$company) {
-            $this->command->error('No company found. Please seed companies first.');
+        $companies = Company::orderBy('id')->get();
+
+        if ($companies->isEmpty()) {
+            $this->command->error(
+                'No companies found. Please seed companies first.'
+            );
+
             return;
         }
 
-        $employees = [
+        /*
+        |--------------------------------------------------------------------------
+        | Base Employee Data
+        |--------------------------------------------------------------------------
+        */
+
+        $employeeTemplates = [
             [
                 'name' => 'Rahim Ahmed',
-                'employee_id' => 'EMP-1001',
-                'company_id' => $company->id,
                 'phone' => '01811111111',
                 'status' => 'active',
                 'nature_of_employment' => 'permanent',
@@ -35,8 +48,6 @@ class EmployeeSeeder extends Seeder
 
             [
                 'name' => 'Karim Hasan',
-                'employee_id' => 'EMP-1002',
-                'company_id' => $company->id,
                 'phone' => '01811111112',
                 'status' => 'active',
                 'nature_of_employment' => 'permanent',
@@ -50,8 +61,6 @@ class EmployeeSeeder extends Seeder
 
             [
                 'name' => 'Sabbir Hossain',
-                'employee_id' => 'EMP-1003',
-                'company_id' => $company->id,
                 'phone' => '01811111113',
                 'status' => 'active',
                 'nature_of_employment' => 'permanent',
@@ -65,8 +74,6 @@ class EmployeeSeeder extends Seeder
 
             [
                 'name' => 'Mehedi Hasan',
-                'employee_id' => 'EMP-1004',
-                'company_id' => $company->id,
                 'phone' => '01811111114',
                 'status' => 'active',
                 'nature_of_employment' => 'permanent',
@@ -80,8 +87,6 @@ class EmployeeSeeder extends Seeder
 
             [
                 'name' => 'Hasan Mahmud',
-                'employee_id' => 'EMP-1005',
-                'company_id' => $company->id,
                 'phone' => '01811111115',
                 'status' => 'active',
                 'nature_of_employment' => 'permanent',
@@ -95,8 +100,6 @@ class EmployeeSeeder extends Seeder
 
             [
                 'name' => 'Nayeem Islam',
-                'employee_id' => 'EMP-1006',
-                'company_id' => $company->id,
                 'phone' => '01811111116',
                 'status' => 'active',
                 'nature_of_employment' => 'permanent',
@@ -110,8 +113,6 @@ class EmployeeSeeder extends Seeder
 
             [
                 'name' => 'Rasel Mia',
-                'employee_id' => 'EMP-1007',
-                'company_id' => $company->id,
                 'phone' => '01811111117',
                 'status' => 'active',
                 'nature_of_employment' => 'permanent',
@@ -125,8 +126,6 @@ class EmployeeSeeder extends Seeder
 
             [
                 'name' => 'Shakil Ahmed',
-                'employee_id' => 'EMP-1008',
-                'company_id' => $company->id,
                 'phone' => '01811111118',
                 'status' => 'active',
                 'nature_of_employment' => 'contract',
@@ -140,8 +139,6 @@ class EmployeeSeeder extends Seeder
 
             [
                 'name' => 'Imran Hossain',
-                'employee_id' => 'EMP-1009',
-                'company_id' => $company->id,
                 'phone' => '01811111119',
                 'status' => 'active',
                 'nature_of_employment' => 'permanent',
@@ -154,15 +151,74 @@ class EmployeeSeeder extends Seeder
             ],
         ];
 
-        foreach ($employees as $employee) {
-            Employee::updateOrCreate(
-                [
-                    'employee_id' => $employee['employee_id'],
-                ],
-                $employee
+        /*
+        |--------------------------------------------------------------------------
+        | Create Employees For Every Company
+        |--------------------------------------------------------------------------
+        */
+
+        foreach ($companies as $company) {
+
+            /*
+            |--------------------------------------------------------------------------
+            | Employee ID Prefix
+            |--------------------------------------------------------------------------
+            |
+            | Company ID 1 → EMP-1001
+            | Company ID 2 → EMP-2001
+            | Company ID 3 → EMP-3001
+            |
+            */
+
+            $employeeStartNumber = ($company->id * 1000) + 1;
+
+            foreach ($employeeTemplates as $index => $template) {
+
+                $employeeId = 'EMP-' . ($employeeStartNumber + $index);
+
+                Employee::updateOrCreate(
+                    [
+                        'employee_id' => $employeeId,
+                    ],
+                    [
+                        'company_id' => $company->id,
+                        'name' => $template['name'],
+                        'phone' => $template['phone'],
+                        'status' => $template['status'],
+                        'nature_of_employment' => $template['nature_of_employment'],
+                        'department' => $template['department'],
+                        'unit' => $template['unit'],
+                        'date_of_joining' => $template['date_of_joining'],
+                        'division' => $template['division'],
+                        'designation' => $template['designation'],
+                        'reporting_person' => $template['reporting_person'],
+                    ]
+                );
+            }
+
+            $this->command->info(
+                "{$company->company_name} employees seeded successfully."
             );
         }
 
-        $this->command->info('Employees seeded successfully.');
+        /*
+        |--------------------------------------------------------------------------
+        | Final Message
+        |--------------------------------------------------------------------------
+        */
+
+        $totalEmployees = $companies->count() * count($employeeTemplates);
+
+        $this->command->info(
+            "All company employees seeded successfully."
+        );
+
+        $this->command->info(
+            "Total companies: {$companies->count()}"
+        );
+
+        $this->command->info(
+            "Total employees: {$totalEmployees}"
+        );
     }
 }
