@@ -39,6 +39,9 @@ Route::post('/verify-otp', [VerificationController::class, 'verifyOtp']);
 Route::middleware('auth:sanctum', 'throttle:api-auth')->group(function () {
     Route::post('/email/resend', [VerificationController::class, 'resend']);
     Route::get('/user', [AuthController::class, 'user']);
+    Route::get('/users', [AuthController::class, 'users']);
+    Route::get('/users/{id}', [AuthController::class, 'showUser']);
+    Route::match(['put', 'patch'], '/users/{id}', [AuthController::class, 'updateUser']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/check-in', [AttendanceController::class, 'checkIn']);
     Route::post('/check-out', [AttendanceController::class, 'checkOut']);

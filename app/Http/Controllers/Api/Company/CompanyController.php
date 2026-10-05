@@ -84,31 +84,31 @@ class CompanyController extends Controller
         }
     }
     public function update(Request $request, $id)
-{
-    try {
-        $company = $this->companyService->update($request, $id);
+    {
+        try {
+            $company = $this->companyService->update($request, $id);
 
-        return response()->json([
-            'status' => 200,
-            'message' => 'Company updated successfully',
-            'data' => [
-                'id' => $company->id,
-                'company_name' => $company->company_name,
-                'email' => $company->email,
-                'phone' => $company->phone,
-                'address' => $company->address,
-                'avatar_url' => $company->getFirstMediaUrl('avatar'),
-            ]
-        ], 200);
+            return response()->json([
+                'status' => 200,
+                'message' => 'Company updated successfully',
+                'data' => [
+                    'id' => $company->id,
+                    'company_name' => $company->company_name,
+                    'email' => $company->email,
+                    'phone' => $company->phone,
+                    'address' => $company->address,
+                    'avatar_url' => $company->getFirstMediaUrl('avatar'),
+                ]
+            ], 200);
 
-    } catch (\Exception $e) {
-        return response()->json([
-            'status' => false,
-            'message' => 'Failed to update company',
-            'error' => $e->getMessage(),
-        ], 500);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to update company',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
-}
 
 
     // public function update(Request $request, $id)

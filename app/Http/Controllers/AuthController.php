@@ -14,9 +14,38 @@ use Illuminate\Support\Facades\Mail;
 use Carbon\Carbon;
 use App\Mail\SendOtpMail;
 use Illuminate\Support\Facades\Hash;
+use App\Services\User\UserService;
 
 class AuthController extends Controller
 {
+    public function users(Request $request, UserService $userService)
+    {
+        $users = $userService->index($request);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'User list retrieved successfully.',
+            'data' => $users,
+        ]);
+    }
+
+    public function showUser(int $id, UserService $userService)
+    {
+        return response()->json([
+            'status' => true,
+            'data' => $userService->show($id),
+        ]);
+    }
+
+    public function updateUser(Request $request, int $id, UserService $userService)
+    {
+        return response()->json([
+            'status' => true,
+            'message' => 'User updated successfully.',
+            'data' => $userService->update($request, $id),
+        ]);
+    }
+
     // public function register(Request $request)
     // {
     //     $data = $request->validate([
@@ -35,45 +64,45 @@ class AuthController extends Controller
     //     ], 201);
     // }
 
-public function register(Request $request)
-{
-    $data = $request->validate([
-        'employee_id' => 'required|exists:employees,employee_id',
-        'email'       => 'required|email|unique:users,email',
-        'password'    => 'required|string|min:8|confirmed',
-    ]);
+    public function register(Request $request)
+    {
+        $data = $request->validate([
+            'employee_id' => 'required|exists:employees,employee_id',
+            'email'       => 'required|email|unique:users,email',
+            'password'    => 'required|string|min:8|confirmed',
+        ]);
 
-    $employee = Employee::where(
-        'employee_id',
-        $data['employee_id']
-    )->first();
+        $employee = Employee::where(
+            'employee_id',
+            $data['employee_id']
+        )->first();
 
-    if (!$employee) {
+        if (!$employee) {
+            return response()->json([
+                'message' => 'Employee not found.',
+                'employee_id' => $data['employee_id'],
+            ], 404);
+        }
+
+        if (User::where('employee_id', $employee->id)->exists()) {
+            return response()->json([
+                'message' => 'This employee already has a user account.',
+            ], 422);
+        }
+
+        $user = User::create([
+            'employee_id' => $employee->id,
+            'email'       => $data['email'],
+            'password'    => Hash::make($data['password']),
+        ]);
+
+        event(new Registered($user));
+
         return response()->json([
-            'message' => 'Employee not found.',
-            'employee_id' => $data['employee_id'],
-        ], 404);
+            'message' => 'Registration successful.',
+            'user' => $user,
+        ], 201);
     }
-
-    if (User::where('employee_id', $employee->id)->exists()) {
-        return response()->json([
-            'message' => 'This employee already has a user account.',
-        ], 422);
-    }
-
-    $user = User::create([
-        'employee_id' => $employee->id,
-        'email'       => $data['email'],
-        'password'    => Hash::make($data['password']),
-    ]);
-
-    event(new Registered($user));
-
-    return response()->json([
-        'message' => 'Registration successful.',
-        'user' => $user,
-    ], 201);
-}
 
 
     // public function register(Request $request)
@@ -373,4 +402,5 @@ public function register(Request $request)
     {       
         return response()->json($request->user());
     }
+
 }
