@@ -8,6 +8,7 @@ class EmployeeLocation extends Model
 {
     protected $fillable = [
         'employee_id',
+        'company_id',
         'latitude',
         'longitude',
     ];

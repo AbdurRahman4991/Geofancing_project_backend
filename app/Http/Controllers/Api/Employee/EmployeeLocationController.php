@@ -7,15 +7,20 @@ use App\Models\EmployeeLocation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use App\Models\Employee;
+use App\Traits\ScopesCompanyAccess;
 
 class EmployeeLocationController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
+     use ScopesCompanyAccess;
        
     public function index(Request $request)
     {
+        if (!auth()->user()->can('employee-location.view')) {
+            abort(403, 'You do not have permission to employee location view .');
+        }
         $perPage = $request->per_page ?? 20;
 
         $cacheKey = 'employee_locations_' . md5(json_encode($request->all()));
@@ -25,6 +30,7 @@ class EmployeeLocationController extends Controller
             $query = EmployeeLocation::with([
                 'employee:id,name,employee_id',
             ]);
+            $this->scopeToCurrentCompany($query);
 
             // Employee Filter
             if ($request->filled('employee_id')) {
@@ -67,13 +73,21 @@ class EmployeeLocationController extends Controller
      */
     public function store(Request $request)
     {
+        if (!auth()->user()->can('employee-location.create')) {
+            abort(403, 'You do not have permission to employee location create .');
+        }
         $validated = $request->validate([
             'employee_id' => 'required|exists:employees,id',
             'latitude' => 'required|numeric',
             'longitude' => 'required|numeric',
         ]);
 
-        $location = EmployeeLocation::create($validated);
+        $location = EmployeeLocation::create([
+            'employee_id' => $validated['employee_id'],
+            'company_id' => auth()->user()->company_id,
+            'latitude' => $validated['latitude'],
+            'longitude' => $validated['longitude'],
+        ]);
 
         return response()->json([
             'message' => 'Location saved successfully',
@@ -86,6 +100,9 @@ class EmployeeLocationController extends Controller
      */
     public function show($id)
     {
+        if (!auth()->user()->can('employee-location.edit')) {
+            abort(403, 'You do not have permission to employee location edit .');
+        }        
         $location = EmployeeLocation::with('employee')->findOrFail($id);
 
         return response()->json($location);
@@ -96,6 +113,9 @@ class EmployeeLocationController extends Controller
      */
     public function update(Request $request, string $id)
     {
+        if (!auth()->user()->can('employee-location.edit')) {
+            abort(403, 'You do not have permission to employee location edit .');
+        }        
         $location = EmployeeLocation::findOrFail($id);
 
         $validated = $request->validate([
@@ -129,6 +149,9 @@ class EmployeeLocationController extends Controller
 
     public function history(Request $request)
     {
+        if (!auth()->user()->can('employee-location.view')) {
+            abort(403, 'You do not have permission to employee location view .');
+        }        
         $request->validate([
             'employee_id' => 'required|exists:employees,id',
             'date' => 'nullable|date',

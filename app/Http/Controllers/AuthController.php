@@ -92,6 +92,9 @@ class AuthController extends Controller
 
         $user = User::create([
             'employee_id' => $employee->id,
+            'name'        => $employee->name,
+            'phone'       => $employee->phone,
+            'company_id'  => $employee->company_id,
             'email'       => $data['email'],
             'password'    => Hash::make($data['password']),
         ]);
