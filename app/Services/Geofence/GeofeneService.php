@@ -4,85 +4,45 @@ namespace App\Services\Geofence;
 
 use App\Models\Geofence;
 use Illuminate\Http\Request;
-use Carbon\Carbon;
-use App\Models\Attendance;
-use App\Models\EmployeeHierarchyAssignment;
-
+use App\Services\Hierarchy\HierarchyAccessService;
 
 class GeofeneService
 {
+    public function __construct(private HierarchyAccessService $hierarchyAccessService)
+    {
+    }
+
    
-   public function index(Request $request)
-    {        
-        if (!auth()->user()->can('farm.view')) {
-            abort(403, 'You do not have permission to view employees.');
+    public function index(Request $request)
+    {
+        if (!auth()->user()->can('market.view')) {
+            abort(403, 'You do not have permission to view geofences.');
         }
+
         $query = Geofence::with([
             'company:id,company_name',
             'area:id,name,territory_id',
         ]);
+        $this->hierarchyAccessService->applyGeofenceAccess($query);
 
-        if (auth()->user()->hasRole('Super-Admin')) {
-
-            if ($request->filled('area_id')) {
-                $query->where('area_id', $request->area_id);
-            }
-
-            if ($request->filled('search')) {
-                $search = $request->search;
-
-                $query->where(function ($q) use ($search) {
-                    $q->where('firm_name', 'like', "%{$search}%")
-                        ->orWhereHas('area', function ($areaQuery) use ($search) {
-                            $areaQuery->where('name', 'like', "%{$search}%");
-                        });
-                });
-            }
-
-            $pagination = $query->latest()->paginate($request->per_page ?? 10);
-
-            return response()->json([
-                "status" => 200,
-                "message" => "Geofence list retrieved successfully",
-                "data" => $pagination
-            ]);
+        if ($request->filled('area_id')) {
+            $query->where('area_id', $request->integer('area_id'));
         }
 
-       $assignment = EmployeeHierarchyAssignment::where('user_id', auth()->id())
-        ->where('is_current', true)
-        ->first();
-
-        if (!$assignment) {
-            return response()->json([
-                'status' => 404,
-                'message' => 'No active hierarchy assignment found for this user.',
-            ], 404);
+        if ($request->filled('search')) {
+            $search = $request->string('search')->toString();
+            $query->where(function ($q) use ($search) {
+                $q->where('firm_name', 'like', "%{$search}%")
+                    ->orWhereHas('area', function ($areaQuery) use ($search) {
+                        $areaQuery->where('name', 'like', "%{$search}%");
+                    });
+            });
         }
-
-        $geofences = $query
-            ->where('area_id', $assignment->area_id)
-            ->latest()
-            ->get();
-
-        $todayVisited = Attendance::where('user_id', auth()->id())
-            ->whereDate('check_in_time', today())
-            ->pluck('geofence_id')
-            ->toArray();
-
-        $geofences->each(function ($geofence) use ($todayVisited) {
-            $geofence->checked = in_array($geofence->id, $todayVisited);
-        });
 
         return response()->json([
-            "status" => 200,
-            "message" => "Geofence list retrieved successfully",
-            "data" => [
-                "current_page" => 1,
-                "data" => $geofences,
-                "total" => $geofences->count(),
-                "per_page" => $geofences->count(),
-                "last_page" => 1,
-            ]
+            'status' => 200,
+            'message' => 'Geofence list retrieved successfully',
+            'data' => $query->latest()->paginate($request->integer('per_page', 10)),
         ]);
     }
 
@@ -90,7 +50,7 @@ class GeofeneService
 
     public function store(Request $request)
     {
-        if (!auth()->user()->can('farm.create')) {
+        if (!auth()->user()->can('market.create')) {
             abort(403, 'You do not have permission to view employees.');
         }        
         $geofence = Geofence::create($request->only([
@@ -114,19 +74,18 @@ class GeofeneService
 
     public function show($id)
     {
-        if (!auth()->user()->can('farm.edit')) {
+        if (!auth()->user()->can('market.view')) {
             abort(403, 'You do not have permission to view employees.');
         }        
-        return Geofence::with(['company:id,company_name', 'user:id,name'])
-            ->findOrFail($id);
+        return $this->findAccessibleGeofence($id)->load(['company:id,company_name', 'user:id,name']);
     }
 
     public function update(Request $request, $id)
     {
-        if (!auth()->user()->can('farm.edit')) {
+        if (!auth()->user()->can('market.edit')) {
             abort(403, 'You do not have permission to view employees.');
         }        
-        $geofence = Geofence::findOrFail($id);
+        $geofence = $this->findAccessibleGeofence($id);
 
         $geofence->update($request->only([
             'company_id',
@@ -149,7 +108,19 @@ class GeofeneService
 
     public function destroy($id)
     {
-        $geofence = Geofence::findOrFail($id);
+        if (!auth()->user()->can('market.delete')) {
+            abort(403, 'You do not have permission to delete geofences.');
+        }
+
+        $geofence = $this->findAccessibleGeofence($id);
         return $geofence->delete();
+    }
+
+    private function findAccessibleGeofence(int|string $id): Geofence
+    {
+        $query = Geofence::query()->whereKey($id);
+        $this->hierarchyAccessService->applyGeofenceAccess($query);
+
+        return $query->firstOrFail();
     }
 }

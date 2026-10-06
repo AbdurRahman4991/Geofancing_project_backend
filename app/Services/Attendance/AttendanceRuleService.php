@@ -5,11 +5,11 @@ namespace App\Services\Attendance;
 use App\Models\AttendanceRule;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
-use App\Traits\CompanyScoped;
+use App\Traits\ScopesCompanyAccess;
 
 class AttendanceRuleService
 {
-    use CompanyScoped;
+    use ScopesCompanyAccess;
     public function index(Request $request)
     {
         if (!auth()->user()->can('attendance-role.view')) {
@@ -19,7 +19,7 @@ class AttendanceRuleService
             'company:id,company_name',
             'user:id,name'
         ]);
-        $this->applyCompanyScope($query);
+        $this->scopeToCurrentCompany($query);
 
         // 🔍 Search
         if ($request->filled('search')) {

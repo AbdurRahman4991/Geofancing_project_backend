@@ -120,12 +120,16 @@ class HierarchyAccessService
         ?EmployeeHierarchyAssignment $assignment = null
     ): Builder {
         // Super Admin → hierarchy restriction নেই
-        if (Auth::user()?->hasRole('Super-Admin')) {
+        $user = Auth::user();
+        if ($user?->hasRole('Super-Admin')) {
             return $query;
         }
 
-        if (Auth::user()?->hasRole('Company Admin')) {
-            return $query;
+        if ($user?->hasRole('Company Admin')) {
+            $companyId = $user->company_id ?? $user->employee?->company_id;
+            return $companyId
+                ? $query->where('geofences.company_id', $companyId)
+                : $query->whereRaw('1 = 0');
         }
         $assignment ??= $this->currentAssignment();
 
@@ -308,12 +312,6 @@ class HierarchyAccessService
         Geofence $geofence,
         ?EmployeeHierarchyAssignment $assignment = null
     ): bool {
-        $assignment ??= $this->currentAssignment();
-
-        if (!$assignment) {
-            return false;
-        }
-
         $query = Geofence::query()
             ->whereKey($geofence->id);
 
@@ -332,12 +330,6 @@ class HierarchyAccessService
         int $areaId,
         ?EmployeeHierarchyAssignment $assignment = null
     ): bool {
-        $assignment ??= $this->currentAssignment();
-
-        if (!$assignment) {
-            return false;
-        }
-
         $query = Geofence::query()
             ->where('area_id', $areaId);
 

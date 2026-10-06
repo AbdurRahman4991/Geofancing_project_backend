@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use App\Services\Geofence\GeofeneService;
 use App\Services\Hierarchy\HierarchyAccessService;
 use App\Models\Geofence;
-use App\Traits\CompanyScoped;
+
 
 class GeofenceController extends Controller
 {
@@ -20,45 +20,15 @@ class GeofenceController extends Controller
         $this->hierarchyAccessService = $hierarchyAccessService;
         
     }
-    use CompanyScoped;
+   
     // public function index(Request $request)
     // {
     //     return $this->service->index($request);
     // }
     public function index(Request $request)
-{
-    $query = Geofence::with([
-        'company:id,company_name',
-        'area:id,name,territory_id',
-    ]);
-
-    // Hierarchy access
-    $this->hierarchyAccessService
-        ->applyGeofenceAccess($query);
-
-    if ($request->filled('search')) {
-        $search = $request->search;
-
-        $query->where(function ($q) use ($search) {
-            $q->where('firm_name', 'like', "%{$search}%")
-                ->orWhereHas('area', function ($areaQuery) use ($search) {
-                    $areaQuery->where('name', 'like', "%{$search}%");
-                });
-        });
+    {
+        return $this->service->index($request);
     }
-
-    if ($request->filled('area_id')) {
-        $query->where('area_id', $request->area_id);
-    }
-
-    return response()->json([
-        'status' => 200,
-        'message' => 'Geofence list retrieved successfully',
-        'data' => $query
-            ->latest()
-            ->paginate($request->per_page ?? 10),
-    ]);
-}
 
 
 
