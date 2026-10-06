@@ -5,9 +5,12 @@ namespace App\Services\User;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use App\Traits\ScopesCompanyAccess;
 
 class UserService
 {
+    use ScopesCompanyAccess;
+
     public function index(Request $request)
     {
         $request->validate([
@@ -19,6 +22,8 @@ class UserService
         $query = User::query()
             ->with('employee:id,name,employee_id,company_id,designation')
             ->select('id', 'name', 'email', 'phone', 'employee_id', 'company_id', 'status', 'created_at');
+
+        $this->scopeToCurrentCompany($query, 'employee');
 
         if ($request->filled('company_id')) {
             $companyId = $request->integer('company_id');
@@ -48,7 +53,10 @@ class UserService
 
     public function show(int $id): User
     {
-        return User::with('employee:id,name,employee_id,company_id,designation')->findOrFail($id);
+        $query = User::with('employee:id,name,employee_id,company_id,designation');
+        $this->scopeToCurrentCompany($query, 'employee');
+
+        return $query->findOrFail($id);
     }
 
     public function update(Request $request, int $id): User

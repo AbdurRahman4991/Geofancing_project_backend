@@ -4,9 +4,11 @@ use Illuminate\Support\Facades\Http;
 use App\Models\Employee;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use App\Traits\ScopesCompanyAccess;
 
 class EmployeeService
 {
+    use ScopesCompanyAccess;
        
 
 public function index(Request $request)
@@ -28,6 +30,8 @@ public function index(Request $request)
     $query = Employee::with([
         'company:id,company_name'
     ]);
+
+    $this->scopeToCurrentCompany($query);
 
     // Login user's company অনুযায়ী filter   
 
@@ -178,7 +182,10 @@ public function index(Request $request)
         if (!auth()->user()->can('employee.edit')) {
         abort(403, 'You do not have permission to view employees.');
         }
-        return Employee::with(['company:id,company_name'])->findOrFail($id);
+        $query = Employee::with(['company:id,company_name']);
+        $this->scopeToCurrentCompany($query);
+
+        return $query->findOrFail($id);
     }
 
     public function update(Request $request, $id)

@@ -7,15 +7,13 @@ use Illuminate\Http\Request;
 use Carbon\Carbon;
 use App\Models\Attendance;
 use App\Models\EmployeeHierarchyAssignment;
-use App\Traits\CompanyScoped;
+
 
 class GeofeneService
 {
    
-    use CompanyScoped;
    public function index(Request $request)
-    {
-        return "hello world";
+    {        
         if (!auth()->user()->can('farm.view')) {
             abort(403, 'You do not have permission to view employees.');
         }
@@ -23,8 +21,6 @@ class GeofeneService
             'company:id,company_name',
             'area:id,name,territory_id',
         ]);
-
-       // $this->applyCompanyScope($query);
 
         if (auth()->user()->hasRole('Super-Admin')) {
 
