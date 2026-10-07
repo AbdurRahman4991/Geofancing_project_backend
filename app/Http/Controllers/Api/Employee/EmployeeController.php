@@ -25,15 +25,9 @@ class EmployeeController extends Controller
         $employee = $this->employeeService->store($request);
         return response()->json(['message' => 'Employee created successfully', 'data' => $employee]);
     }
-    public function syncEmployees()
+    public function syncEmployees(Request $request)
     {
-        $result = $this->employeeService->syncEmployees();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Employees synchronized successfully.',
-            'data' => $result,
-        ]);
+        return $this->employeeService->syncEmployees($request);
     }
 
     public function show($id)
