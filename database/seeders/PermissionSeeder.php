@@ -25,6 +25,11 @@ class PermissionSeeder extends Seeder
             'company.edit',
             'company.delete',
 
+            'department.view',
+            'department.create',
+            'department.edit',
+            'department.delete',
+
             'country.view',
             'country.create',
             'country.edit',

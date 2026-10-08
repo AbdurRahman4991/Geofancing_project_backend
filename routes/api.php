@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\Employee\EmployeeLocationEmployeeController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\Department\DepartmentController;
 use App\Http\Controllers\Api\Hierarchy\CountryController;
 use App\Http\Controllers\Api\Hierarchy\RegionController;
 use App\Http\Controllers\Api\Hierarchy\ZoneController;
@@ -51,6 +52,7 @@ Route::middleware('auth:sanctum', 'throttle:api-auth')->group(function () {
     Route::post('/locations/history', [EmployeeLocationController::class, 'history']);
     Route::apiResource('geofences', GeofenceController::class);    
     Route::apiResource('employees', EmployeeController::class);
+    Route::apiResource('departments', DepartmentController::class);
     Route::post('employees/sync', [EmployeeController::class, 'syncEmployees']);   
     Route::apiResource('permissions', PermissionController::class);
     Route::get('permission-groups', [PermissionController::class, 'grouped']);  
