@@ -19,6 +19,7 @@ return new class extends Migration
             $table->time('office_out_time')->nullable();
             $table->json('weekend_holidays')->nullable();
             $table->json('government_holidays')->nullable();
+            $table->boolean('tracking_enabled')->default(false);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');

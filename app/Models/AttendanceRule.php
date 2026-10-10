@@ -13,12 +13,14 @@ class AttendanceRule extends Model
         'office_out_time',
         'weekend_holidays',
         'government_holidays',
+        'tracking_enabled',
         'is_active',
     ];
 
     protected $casts = [
         'weekend_holidays' => 'array',
         'government_holidays' => 'array',
+        'tracking_enabled' => 'boolean',
         'is_active' => 'boolean',
     ];
 

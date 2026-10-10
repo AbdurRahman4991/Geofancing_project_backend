@@ -82,9 +82,23 @@ class EmployeeLocationController extends Controller
             'longitude' => 'required|numeric',
         ]);
 
+        $user = auth()->user();
+        $companyId = $user->company_id ?? $user->employee?->company_id;
+        $employee = Employee::findOrFail($validated['employee_id']);
+
+        if (!$companyId) {
+            return response()->json([
+                'message' => 'No company is assigned to this user account.',
+            ], 422);
+        }
+
+        if ((int) $employee->company_id !== (int) $companyId) {
+            abort(403, 'This employee does not belong to your company.');
+        }
+
         $location = EmployeeLocation::create([
-            'employee_id' => $validated['employee_id'],
-            'company_id' => auth()->user()->company_id,
+            'employee_id' => $employee->id,
+            'company_id' => $companyId,
             'latitude' => $validated['latitude'],
             'longitude' => $validated['longitude'],
         ]);

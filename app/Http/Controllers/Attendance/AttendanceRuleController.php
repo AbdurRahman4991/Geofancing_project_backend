@@ -33,6 +33,7 @@ class AttendanceRuleController extends Controller
             'company_id' => 'required|exists:companies,id',
             'office_in_time' => 'required',
             'office_out_time' => 'required',
+            'tracking_enabled' => 'sometimes|boolean',
         ]);
 
         return response()->json($this->service->store($request), 201);

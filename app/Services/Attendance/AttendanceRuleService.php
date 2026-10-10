@@ -53,6 +53,7 @@ class AttendanceRuleService
             'office_out_time',
             'weekend_holidays',
             'government_holidays',
+            'tracking_enabled',
             'is_active',
         ]));
 
@@ -82,6 +83,7 @@ class AttendanceRuleService
             'office_out_time',
             'weekend_holidays',
             'government_holidays',
+            'tracking_enabled',
             'is_active',
         ]));
 
