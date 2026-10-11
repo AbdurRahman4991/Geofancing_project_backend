@@ -6,10 +6,15 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use App\Traits\ScopesCompanyAccess;
+use App\Services\Hierarchy\HierarchyAccessService;
 
 class UserService
 {
     use ScopesCompanyAccess;
+
+    public function __construct(private HierarchyAccessService $hierarchyAccessService)
+    {
+    }
 
     public function index(Request $request)
     {
@@ -24,6 +29,7 @@ class UserService
             ->select('id', 'name', 'email', 'phone', 'employee_id', 'company_id', 'status', 'created_at');
 
         $this->scopeToCurrentCompany($query, 'employee');
+        $this->hierarchyAccessService->applyUserHierarchyAccess($query);
 
         if ($request->filled('company_id')) {
             $companyId = $request->integer('company_id');
@@ -55,13 +61,17 @@ class UserService
     {
         $query = User::with('employee:id,name,employee_id,company_id,designation');
         $this->scopeToCurrentCompany($query, 'employee');
+        $this->hierarchyAccessService->applyUserHierarchyAccess($query);
 
         return $query->findOrFail($id);
     }
 
     public function update(Request $request, int $id): User
     {       
-        $user = User::findOrFail($id);
+        $query = User::query();
+        $this->scopeToCurrentCompany($query, 'employee');
+        $this->hierarchyAccessService->applyUserHierarchyAccess($query);
+        $user = $query->findOrFail($id);
 
         $data = $request->validate([
             'name' => 'sometimes|required|string|max:255',

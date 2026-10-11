@@ -6,10 +6,16 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Traits\ScopesCompanyAccess;
+use App\Services\Hierarchy\HierarchyAccessService;
 
 class UserController extends Controller
 {
     use ScopesCompanyAccess;
+
+    public function __construct(private HierarchyAccessService $hierarchyAccessService)
+    {
+    }
+
     public function assignRoleUsers(Request $request)
     {
         if (!auth()->user()->can('assign-role-user.view')) {
@@ -21,6 +27,7 @@ class UserController extends Controller
         ])
         ->select('id', 'employee_id', 'name');
         $this->scopeToCurrentCompany($query);
+        $this->hierarchyAccessService->applyUserHierarchyAccess($query);
 
         // Search by employee name or employee id
         if ($request->filled('search')) {

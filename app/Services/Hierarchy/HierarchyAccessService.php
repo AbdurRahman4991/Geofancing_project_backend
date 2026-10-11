@@ -109,6 +109,33 @@ class HierarchyAccessService
     }
 
     /**
+     * Restrict a User query to the authenticated user's hierarchy branch.
+     * Super admins and company admins are handled by the caller's company scope.
+     */
+    public function applyUserHierarchyAccess(Builder $query): Builder
+    {
+        $user = Auth::user();
+
+        if (!$user || $user->hasRole('Super-Admin') || $user->hasRole('Company Admin')) {
+            return $query;
+        }
+
+        $assignment = $this->currentAssignment();
+        $level = $this->getAssignedLevel($assignment);
+        $id = $this->getAssignedId($assignment);
+
+        if (!$assignment || !$level || !$id) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        $column = $level . '_id';
+
+        return $query->whereHas('hierarchyAssignment', function (Builder $assignmentQuery) use ($column, $id) {
+            $assignmentQuery->where($column, $id);
+        });
+    }
+
+    /**
      * Apply hierarchy access restriction to Geofence query.
      *
      * Market/Geofence belongs to Area.
