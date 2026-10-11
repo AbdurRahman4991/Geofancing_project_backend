@@ -73,6 +73,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(Attendance::class);
     }
 
+    public function locations()
+    {
+        return $this->hasMany(EmployeeLocation::class);
+    }
+
     public function employeeGeofence()
     {
         return $this->belongsTo(Employee::class, 'employee_id');

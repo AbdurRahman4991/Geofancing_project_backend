@@ -6,11 +6,15 @@ use App\Http\Controllers\Controller;
 use App\Models\EmployeeLocation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use App\Models\Employee;
 use App\Traits\ScopesCompanyAccess;
+use App\Services\Employee\EmployeeLocationService;
 
 class EmployeeLocationController extends Controller
 {
+    public function __construct(private EmployeeLocationService $service)
+    {
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -23,27 +27,31 @@ class EmployeeLocationController extends Controller
         }
         $perPage = $request->per_page ?? 20;
 
-        $cacheKey = 'employee_locations_' . md5(json_encode($request->all()));
+        $user = auth()->user();
+        $cacheKey = 'employee_locations_' . $user->id . '_' . md5(json_encode($request->all()));
 
         return Cache::remember($cacheKey, now()->addMinutes(5), function () use ($request, $perPage) {
 
             $query = EmployeeLocation::with([
-                'employee:id,name,employee_id',
+                'user:id,name,employee_id,company_id',
+                'user.employee:id,name,employee_id',
             ]);
             $this->scopeToCurrentCompany($query);
 
-            // Employee Filter
-            if ($request->filled('employee_id')) {
-                $query->where('employee_id', $request->employee_id);
+            if ($request->filled('user_id')) {
+                $query->where('user_id', $request->user_id);
             }
 
             // Search by Employee Name / Employee ID
             if ($request->filled('search')) {
                 $search = $request->search;
 
-                $query->whereHas('employee', function ($q) use ($search) {
+                $query->whereHas('user', function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('employee_id', 'like', "%{$search}%");
+                        ->orWhereHas('employee', function ($employeeQuery) use ($search) {
+                            $employeeQuery->where('name', 'like', "%{$search}%")
+                                ->orWhere('employee_id', 'like', "%{$search}%");
+                        });
                 });
             }
 
@@ -77,31 +85,14 @@ class EmployeeLocationController extends Controller
             abort(403, 'You do not have permission to employee location create .');
         }
         $validated = $request->validate([
-            'employee_id' => 'required|exists:employees,id',
             'latitude' => 'required|numeric',
             'longitude' => 'required|numeric',
+            'activity_type' => 'nullable|string|max:255',
+            'transport_mode' => 'nullable|string|max:255',
+            'speed' => 'nullable|numeric|min:0',
         ]);
 
-        $user = auth()->user();
-        $companyId = $user->company_id ?? $user->employee?->company_id;
-        $employee = Employee::findOrFail($validated['employee_id']);
-
-        if (!$companyId) {
-            return response()->json([
-                'message' => 'No company is assigned to this user account.',
-            ], 422);
-        }
-
-        if ((int) $employee->company_id !== (int) $companyId) {
-            abort(403, 'This employee does not belong to your company.');
-        }
-
-        $location = EmployeeLocation::create([
-            'employee_id' => $employee->id,
-            'company_id' => $companyId,
-            'latitude' => $validated['latitude'],
-            'longitude' => $validated['longitude'],
-        ]);
+        $location = $this->service->createForUser(auth()->user(), $validated);
 
         return response()->json([
             'message' => 'Location saved successfully',
@@ -117,7 +108,9 @@ class EmployeeLocationController extends Controller
         if (!auth()->user()->can('employee-location.edit')) {
             abort(403, 'You do not have permission to employee location edit .');
         }        
-        $location = EmployeeLocation::with('employee')->findOrFail($id);
+        $query = EmployeeLocation::with(['user.employee']);
+        $this->scopeToCurrentCompany($query);
+        $location = $query->findOrFail($id);
 
         return response()->json($location);
     }
@@ -130,7 +123,9 @@ class EmployeeLocationController extends Controller
         if (!auth()->user()->can('employee-location.edit')) {
             abort(403, 'You do not have permission to employee location edit .');
         }        
-        $location = EmployeeLocation::findOrFail($id);
+        $query = EmployeeLocation::query();
+        $this->scopeToCurrentCompany($query);
+        $location = $query->findOrFail($id);
 
         $validated = $request->validate([
             'latitude' => 'required|numeric',
@@ -150,7 +145,13 @@ class EmployeeLocationController extends Controller
      */
     public function destroy(string $id)
     {
-        $location = EmployeeLocation::findOrFail($id);
+        if (!auth()->user()->can('employee-location.delete')) {
+            abort(403, 'You do not have permission to delete employee locations.');
+        }
+
+        $query = EmployeeLocation::query();
+        $this->scopeToCurrentCompany($query);
+        $location = $query->findOrFail($id);
 
         $location->delete();
 
@@ -167,13 +168,17 @@ class EmployeeLocationController extends Controller
             abort(403, 'You do not have permission to employee location view .');
         }        
         $request->validate([
-            'employee_id' => 'required|exists:employees,id',
+            'user_id' => 'sometimes|exists:users,id',
             'date' => 'nullable|date',
         ]);
 
         $date = $request->date ?? today()->toDateString();
 
-        $locations = EmployeeLocation::where('employee_id', $request->employee_id)
+        $query = EmployeeLocation::query();
+        $this->scopeToCurrentCompany($query);
+
+        $query->where('user_id', $request->input('user_id', auth()->id()));
+        $locations = $query
             ->whereDate('created_at', $date)
             ->orderBy('created_at', 'asc')
             ->get([

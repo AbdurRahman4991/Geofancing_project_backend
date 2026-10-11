@@ -16,15 +16,6 @@ class EmployeeService
 
 public function index(Request $request)
 {
-//     $user = auth()->user();
-
-// dd([
-//     'user_id' => $user->id,
-//     'roles' => $user->getRoleNames(),
-//     'permissions' => $user->getAllPermissions()->pluck('name'),
-//     'can_employee_view' => $user->can('employee.view'),
-// ]);
-
    
     if (!auth()->user()->can('employee.view')) {
         abort(403, 'You do not have permission to view employees.');

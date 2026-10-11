@@ -13,10 +13,22 @@ return new class extends Migration
     {
         Schema::create('employee_locations', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('employee_id')->constrained();
+            $table->foreignId('user_id')->constrained();
             $table->integer('company_id')->nullable();
             $table->decimal('latitude', 10, 8);
             $table->decimal('longitude', 11, 8);
+            $table->string('activity_type')
+                ->nullable()
+                ->after('longitude');
+
+            $table->string('transport_mode')
+                ->nullable()
+                ->after('activity_type');
+
+            $table->decimal('speed', 8, 2)
+                ->nullable()
+                ->comment('Speed in km/h')
+                ->after('transport_mode');
             $table->timestamps();
         });
     }

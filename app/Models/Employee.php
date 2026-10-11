@@ -33,6 +33,13 @@ class Employee extends Model
 
     public function locations()
     {
-        return $this->hasMany(EmployeeLocation::class);
+        return $this->hasManyThrough(
+            EmployeeLocation::class,
+            User::class,
+            'employee_id',
+            'user_id',
+            'id',
+            'id'
+        );
     }
 }

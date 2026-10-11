@@ -7,15 +7,23 @@ use Illuminate\Database\Eloquent\Model;
 class EmployeeLocation extends Model
 {
     protected $fillable = [
-        'employee_id',
+        'user_id',
         'company_id',
         'latitude',
         'longitude',
+        'activity_type',
+        'transport_mode',
+        'speed',
     ];
 
-    public function employee()
+    public function user()
     {
-        return $this->belongsTo(Employee::class, 'employee_id');
+        return $this->belongsTo(User::class);
+    }
+
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
     }
 
 }
