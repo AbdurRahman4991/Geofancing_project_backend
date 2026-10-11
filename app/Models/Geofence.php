@@ -29,6 +29,11 @@ class Geofence extends Model implements HasMedia
         return $this->belongsTo(Company::class);
     }
 
+    public function attendances()
+    {
+        return $this->hasMany(Attendance::class);
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);

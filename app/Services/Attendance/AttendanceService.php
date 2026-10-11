@@ -63,14 +63,15 @@ class AttendanceService
         // Get attendance rule
         // =============================================
 
+        // Prefer a rule assigned directly to this user.
         $attendanceRule = AttendanceRule::where('user_id', $user->id)->first();
 
         if (!$attendanceRule) {
+            $employee = $user->employee ?? Employee::find($user->employee_id);
+            $companyId = $user->company_id ?? $employee?->company_id;
 
-            $employee = Employee::where('id', $user->employee_id)->first();
-
-            if ($employee) {
-                $attendanceRule = AttendanceRule::where('company_id', $employee->company_id)
+            if ($companyId) {
+                $attendanceRule = AttendanceRule::where('company_id', $companyId)
                     ->whereNull('user_id')
                     ->first();
             }
@@ -330,7 +331,7 @@ class AttendanceService
     }
 
     public function attendanceHistory(Request $request)
-    {
+    {       
         if (!auth()->user()->can('attendance.view')) {
             abort(403, 'You do not have permission to attendance history.');
         }         
@@ -411,7 +412,7 @@ class AttendanceService
         }
 
         $attendance = $query
-            ->with('user:id,name,employee_id')
+            ->with(['user:id,name,employee_id', 'geofence:id,firm_name'])
             ->latest()
             ->paginate($request->per_page ?? 20);
 

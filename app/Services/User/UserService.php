@@ -60,7 +60,7 @@ class UserService
     }
 
     public function update(Request $request, int $id): User
-    {
+    {       
         $user = User::findOrFail($id);
 
         $data = $request->validate([
@@ -70,6 +70,7 @@ class UserService
             'status' => 'sometimes|required|in:active,inactive',
             'company_id' => 'sometimes|nullable|integer|exists:companies,id',
         ]);
+       
 
         $user->update($data);
 

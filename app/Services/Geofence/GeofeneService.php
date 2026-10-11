@@ -16,7 +16,7 @@ class GeofeneService
     public function index(Request $request)
     {
         if (!auth()->user()->can('market.view')) {
-            abort(403, 'You do not have permission to view geofences.');
+            abort(403, 'You do not have permission to view Market.');
         }
 
         $query = Geofence::with([
@@ -51,7 +51,7 @@ class GeofeneService
     public function store(Request $request)
     {
         if (!auth()->user()->can('market.create')) {
-            abort(403, 'You do not have permission to view employees.');
+            abort(403, 'You do not have permission to create market.');
         }        
         $geofence = Geofence::create($request->only([
             'company_id',
@@ -74,8 +74,8 @@ class GeofeneService
 
     public function show($id)
     {
-        if (!auth()->user()->can('market.view')) {
-            abort(403, 'You do not have permission to view employees.');
+        if (!auth()->user()->can('market.edit')) {
+            abort(403, 'You do not have permission to edit market.');
         }        
         return $this->findAccessibleGeofence($id)->load(['company:id,company_name', 'user:id,name']);
     }
@@ -83,7 +83,7 @@ class GeofeneService
     public function update(Request $request, $id)
     {
         if (!auth()->user()->can('market.edit')) {
-            abort(403, 'You do not have permission to view employees.');
+            abort(403, 'You do not have permission to edit market.');
         }        
         $geofence = $this->findAccessibleGeofence($id);
 
@@ -109,7 +109,7 @@ class GeofeneService
     public function destroy($id)
     {
         if (!auth()->user()->can('market.delete')) {
-            abort(403, 'You do not have permission to delete geofences.');
+            abort(403, 'You do not have permission to delete market.');
         }
 
         $geofence = $this->findAccessibleGeofence($id);

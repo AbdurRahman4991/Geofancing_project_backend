@@ -36,4 +36,9 @@ class Attendance extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function geofence()
+    {
+        return $this->belongsTo(Geofence::class);
+    }
 }

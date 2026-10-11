@@ -119,18 +119,26 @@ class HierarchyAccessService
         Builder $query,
         ?EmployeeHierarchyAssignment $assignment = null
     ): Builder {
-        // Super Admin → hierarchy restriction নেই
+        // Super Admin can access data across companies.
         $user = Auth::user();
         if ($user?->hasRole('Super-Admin')) {
             return $query;
         }
 
-        if ($user?->hasRole('Company Admin')) {
-            $companyId = $user->company_id ?? $user->employee?->company_id;
-            return $companyId
-                ? $query->where('geofences.company_id', $companyId)
-                : $query->whereRaw('1 = 0');
+        // All other users are restricted to their own company.
+        $companyId = $user?->company_id ?? $user?->employee?->company_id;
+        if (!$companyId) {
+            return $query->whereRaw('1 = 0');
         }
+
+        $query->where('geofences.company_id', $companyId);
+
+        // Company Admins have company-wide access; other roles also need
+        // to pass the hierarchy restriction below.
+        if ($user?->hasRole('Company Admin')) {
+            return $query;
+        }
+
         $assignment ??= $this->currentAssignment();
 
         if (!$assignment) {
