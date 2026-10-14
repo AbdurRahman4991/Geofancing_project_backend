@@ -18,6 +18,8 @@ class UserService
 
     public function index(Request $request)
     {
+        $this->authorizePermission('user.view');
+
         $request->validate([
             'company_id' => 'sometimes|integer|exists:companies,id',
             'search' => 'sometimes|string|max:255',
@@ -59,6 +61,8 @@ class UserService
 
     public function show(int $id): User
     {
+        $this->authorizePermission('user.edit');
+
         $query = User::with('employee:id,name,employee_id,company_id,designation');
         $this->scopeToCurrentCompany($query, 'employee');
         $this->hierarchyAccessService->applyUserHierarchyAccess($query);
@@ -67,7 +71,9 @@ class UserService
     }
 
     public function update(Request $request, int $id): User
-    {       
+    {
+        $this->authorizePermission('user.update');
+
         $query = User::query();
         $this->scopeToCurrentCompany($query, 'employee');
         $this->hierarchyAccessService->applyUserHierarchyAccess($query);
@@ -85,5 +91,14 @@ class UserService
         $user->update($data);
 
         return $user->load('employee:id,name,employee_id,company_id,designation');
+    }
+
+    private function authorizePermission(string $permission): void
+    {
+        abort_unless(
+            auth()->user()?->can($permission),
+            403,
+            'You do not have permission to ' . $permission . '.'
+        );
     }
 }

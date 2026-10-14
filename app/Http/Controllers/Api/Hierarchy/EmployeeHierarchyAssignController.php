@@ -39,6 +39,7 @@ class EmployeeHierarchyAssignController extends Controller
         }         
         $validated = $request->validate([
             'user_id' => ['required', 'integer', 'exists:users,id'],
+            'hierarchy_node_id' => ['nullable', 'integer', 'exists:hierarchy_nodes,id'],
             'country_id' => ['nullable', 'integer', 'exists:countries,id'],
             'region_id' => ['nullable', 'integer', 'exists:regions,id'],
             'zone_id' => ['nullable', 'integer', 'exists:zones,id'],
@@ -88,6 +89,7 @@ class EmployeeHierarchyAssignController extends Controller
 
         $validated = $request->validate([
             'user_id' => ['required', 'integer', 'exists:users,id'],
+            'hierarchy_node_id' => ['nullable', 'integer', 'exists:hierarchy_nodes,id'],
             'country_id' => ['nullable', 'integer', 'exists:countries,id'],
             'region_id' => ['nullable', 'integer', 'exists:regions,id'],
             'zone_id' => ['nullable', 'integer', 'exists:zones,id'],

@@ -3,18 +3,21 @@
 namespace App\Services\Company;
 
 use App\Models\Company;
+use App\Traits\ScopesCompanyDirectoryAccess;
 use Illuminate\Http\Request;
 
 
 class CompanyService
 {
+    use ScopesCompanyDirectoryAccess;
 
     public function all(Request $request)
     {
         if (!auth()->user()->can('company.view')) {
             abort(403, 'You do not have permission to view employees.');
         }
-        $query = Company::query();    
+        $query = Company::query();
+        $this->scopeToAccessibleCompanies($query);
 
         // Add search filter
         if ($request->has('search') && !empty($request->search)) {
@@ -47,9 +50,9 @@ class CompanyService
 
     public function store(Request $request)
     {
-        if (!auth()->user()->can('company.create')) {
-            abort(403, 'You do not have permission to view employees.');
-        }
+        // if (!auth()->user()->can('company.create')) {
+        //     abort(403, 'You do not have permission to view employees.');
+        // }
         $company = Company::create($request->only(['company_name', 'email', 'phone', 'address','details','package','billing_cycle','status']));
 
         if ($request->hasFile('avatar')) {
@@ -67,7 +70,9 @@ class CompanyService
         if (!auth()->user()->can('company.edit')) {
         abort(403, 'You do not have permission to view employees.');
         }
-        $company = Company::findOrFail($id);
+        $query = Company::query();
+        $this->scopeToAccessibleCompanies($query);
+        $company = $query->findOrFail($id);
 
         // Add avatar URL (just like in all() method)
         $company->avatar = $company->getFirstMediaUrl('avatar');
@@ -81,7 +86,9 @@ class CompanyService
         if (!auth()->user()->can('company.edit')) {
         abort(403, 'You do not have permission to view employees.');
         }
-        $company = Company::findOrFail($id);
+        $query = Company::query();
+        $this->scopeToAccessibleCompanies($query);
+        $company = $query->findOrFail($id);
 
         $company->update($request->only([
             'company_name', 'email', 'phone', 'address', 'details','package','billing_cycle','status'
@@ -97,7 +104,9 @@ class CompanyService
 
     public function destroy($id)
     {
-        $company = Company::findOrFail($id);
+        $query = Company::query();
+        $this->scopeToAccessibleCompanies($query);
+        $company = $query->findOrFail($id);
         $company->clearMediaCollection('avatar'); 
         $company->delete();
 

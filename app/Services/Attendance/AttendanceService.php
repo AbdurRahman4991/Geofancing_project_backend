@@ -7,6 +7,7 @@ use App\Models\AttendanceRule;
 use App\Models\Geofence;
 use App\Models\Employee;
 use App\Models\EmployeeHierarchyAssignment;
+use App\Models\HierarchyNode;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
@@ -22,10 +23,6 @@ class AttendanceService
         } 
         $user = Auth::user();
 
-        // =============================================
-        // Get logged-in user's current area_id
-        // =============================================
-
         $assignment = EmployeeHierarchyAssignment::where('user_id', $user->id)
             ->where('is_current', true)
             ->first();
@@ -37,25 +34,12 @@ class AttendanceService
             ];
         }
 
-        $areaId = $assignment->area_id;
-
-        if (!$areaId) {
-            return [
-                'success' => false,
-                'message' => 'No area assigned to this employee!'
-            ];
-        }
-
-        // =============================================
-        // Get geofences by area_id
-        // =============================================
-
-        $geofences = Geofence::where('area_id', $areaId)->get();
+        $geofences = $this->geofencesForAssignment($assignment, $user);
 
         if ($geofences->isEmpty()) {
             return [
                 'success' => false,
-                'message' => 'Geofence not set for this area!'
+                'message' => 'No geofence is configured for this hierarchy assignment.'
             ];
         }
 
@@ -191,10 +175,6 @@ class AttendanceService
 
          $user = Auth::user();
 
-        // =============================================
-        // Get logged-in user's current area_id
-        // =============================================
-
         $assignment = EmployeeHierarchyAssignment::where('user_id', $user->id)
             ->where('is_current', true)
             ->first();
@@ -206,25 +186,12 @@ class AttendanceService
             ];
         }
 
-        $areaId = $assignment->area_id;
-
-        if (!$areaId) {
-            return [
-                'success' => false,
-                'message' => 'No area assigned to this employee!'
-            ];
-        }
-
-        // =============================================
-        // Get geofences by area_id
-        // =============================================
-
-        $geofences = Geofence::where('area_id', $areaId)->get();
+        $geofences = $this->geofencesForAssignment($assignment, $user);
 
         if ($geofences->isEmpty()) {
             return [
                 'success' => false,
-                'message' => 'Geofence not set for this area!'
+                'message' => 'No geofence is configured for this hierarchy assignment.'
             ];
         }
 
@@ -317,6 +284,48 @@ class AttendanceService
     /**
      * ⚙️ Haversine distance formula
      */
+    /** Resolve geofences from either a node assignment or a legacy area assignment. */
+    private function geofencesForAssignment(EmployeeHierarchyAssignment $assignment, $user)
+    {
+        if ($assignment->hierarchy_node_id) {
+            $node = HierarchyNode::find($assignment->hierarchy_node_id);
+            if (!$node) {
+                return collect();
+            }
+
+            $nodeIds = [(int) $node->id];
+            $frontier = $nodeIds;
+            while ($frontier) {
+                $children = HierarchyNode::forCompany((int) $node->company_id)
+                    ->whereIn('parent_id', $frontier)
+                    ->pluck('id')
+                    ->map(fn ($id) => (int) $id)
+                    ->all();
+                $frontier = array_values(array_diff($children, $nodeIds));
+                $nodeIds = array_merge($nodeIds, $frontier);
+            }
+
+            return Geofence::query()
+                ->where('company_id', $node->company_id)
+                ->whereIn('hierarchy_node_id', $nodeIds)
+                ->get();
+        }
+
+        if (!$assignment->area_id) {
+            return collect();
+        }
+
+        $companyId = $user->company_id ?? $user->employee?->company_id;
+        if (!$companyId) {
+            return collect();
+        }
+
+        return Geofence::query()
+            ->where('company_id', $companyId)
+            ->where('area_id', $assignment->area_id)
+            ->get();
+    }
+
     private function calculateDistance($lat1, $lon1, $lat2, $lon2)
     {
         $earthRadius = 6371000; // meters

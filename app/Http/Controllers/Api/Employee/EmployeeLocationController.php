@@ -8,10 +8,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use App\Traits\ScopesCompanyAccess;
 use App\Services\Employee\EmployeeLocationService;
+use App\Services\Hierarchy\HierarchyAccessService;
 
 class EmployeeLocationController extends Controller
 {
-    public function __construct(private EmployeeLocationService $service)
+    public function __construct(
+        private EmployeeLocationService $service,
+        private HierarchyAccessService $hierarchyAccessService
+    )
     {
     }
 
@@ -37,6 +41,7 @@ class EmployeeLocationController extends Controller
                 'user.employee:id,name,employee_id',
             ]);
             $this->scopeToCurrentCompany($query);
+            $this->applyHierarchyScope($query);
 
             if ($request->filled('user_id')) {
                 $query->where('user_id', $request->user_id);
@@ -110,6 +115,7 @@ class EmployeeLocationController extends Controller
         }        
         $query = EmployeeLocation::with(['user.employee']);
         $this->scopeToCurrentCompany($query);
+        $this->applyHierarchyScope($query);
         $location = $query->findOrFail($id);
 
         return response()->json($location);
@@ -125,6 +131,7 @@ class EmployeeLocationController extends Controller
         }        
         $query = EmployeeLocation::query();
         $this->scopeToCurrentCompany($query);
+        $this->applyHierarchyScope($query);
         $location = $query->findOrFail($id);
 
         $validated = $request->validate([
@@ -151,6 +158,7 @@ class EmployeeLocationController extends Controller
 
         $query = EmployeeLocation::query();
         $this->scopeToCurrentCompany($query);
+        $this->applyHierarchyScope($query);
         $location = $query->findOrFail($id);
 
         $location->delete();
@@ -176,6 +184,7 @@ class EmployeeLocationController extends Controller
 
         $query = EmployeeLocation::query();
         $this->scopeToCurrentCompany($query);
+        $this->applyHierarchyScope($query);
 
         $query->where('user_id', $request->input('user_id', auth()->id()));
         $locations = $query
@@ -193,5 +202,12 @@ class EmployeeLocationController extends Controller
             'message' => 'Location history retrieved successfully',
             'data' => $locations,
         ]);
+    }
+
+    private function applyHierarchyScope($query): void
+    {
+        $query->whereHas('user', function ($userQuery) {
+            $this->hierarchyAccessService->applyUserHierarchyAccess($userQuery);
+        });
     }
 }

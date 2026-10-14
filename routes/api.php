@@ -26,6 +26,8 @@ use App\Http\Controllers\Api\Hierarchy\SubDistrictController;
 use App\Http\Controllers\Api\Hierarchy\TerritoryController;
 use App\Http\Controllers\Api\Hierarchy\AreaController;
 use App\Http\Controllers\Api\Hierarchy\EmployeeHierarchyAssignController;
+use App\Http\Controllers\Api\Hierarchy\HierarchyLevelController;
+use App\Http\Controllers\Api\Hierarchy\HierarchyNodeController;
 
 
 Route::post('/register', [AuthController::class, 'register']);
@@ -65,6 +67,8 @@ Route::middleware('auth:sanctum', 'throttle:api-auth')->group(function () {
     Route::apiResource('attendance-rules', AttendanceRuleController::class);
 
     // Hierarchy //
+    Route::apiResource('hierarchy-levels', HierarchyLevelController::class);
+    Route::apiResource('hierarchy-nodes', HierarchyNodeController::class);
 
     Route::apiResource('countries', CountryController::class);
     Route::apiResource('regions', RegionController::class);

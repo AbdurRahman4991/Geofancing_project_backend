@@ -11,14 +11,6 @@ class CompanySeeder extends Seeder
     {
         $companies = [
 
-            [
-                'company_name' => 'Aman Group Limited',
-                'email'        => 'info@amangroup.com',
-                'phone'        => '01711000001',
-                'address'      => 'Gulshan-1, Dhaka, Bangladesh',                
-                'status'       => 'Active',
-                'verified'     => 'Yes',
-            ],
 
             [
                 'company_name' => 'Green Farm Limited',
@@ -36,25 +28,7 @@ class CompanySeeder extends Seeder
                 'address'      => 'Mymensingh, Bangladesh',                
                 'status'       => 'Active',
                 'verified'     => 'Yes',
-            ],
-
-            [
-                'company_name' => 'Fresh Harvest Agriculture',
-                'email'        => 'info@freshharvest.com',
-                'phone'        => '01711000004',
-                'address'      => 'Rajshahi, Bangladesh',                
-                'status'       => 'Active',
-                'verified'     => 'Yes',
-            ],
-
-            [
-                'company_name' => 'Delta Agro Industries',
-                'email'        => 'info@deltaagro.com',
-                'phone'        => '01711000005',
-                'address'      => 'Khulna, Bangladesh',                
-                'status'       => 'Active',
-                'verified'     => 'Yes',
-            ],
+            ],           
             
         ];
 

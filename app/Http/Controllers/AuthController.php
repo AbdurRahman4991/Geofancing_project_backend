@@ -287,6 +287,8 @@ class AuthController extends Controller
 
         // Login User
         $user = Auth::user();
+        $companyId = $user->company_id ?? $user->employee?->company_id;
+        $roleNames = $user->getRoleNames()->values();
 
         // আগের token delete করতে চাইলে
         $user->tokens()->delete();
@@ -303,6 +305,8 @@ class AuthController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'company_id' => $companyId,
+                'roles' => $roleNames,
             ]
         ]);
     }

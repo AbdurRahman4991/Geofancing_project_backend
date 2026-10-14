@@ -3,7 +3,9 @@
 namespace App\Services\Geofence;
 
 use App\Models\Geofence;
+use App\Models\HierarchyNode;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use App\Services\Hierarchy\HierarchyAccessService;
 
 class GeofeneService
@@ -22,6 +24,7 @@ class GeofeneService
         $query = Geofence::with([
             'company:id,company_name',
             'area:id,name,territory_id',
+            'hierarchyNode:id,name,hierarchy_level_id,parent_id',
         ]);
         $this->hierarchyAccessService->applyGeofenceAccess($query);
 
@@ -53,9 +56,18 @@ class GeofeneService
         if (!auth()->user()->can('market.create')) {
             abort(403, 'You do not have permission to create market.');
         }        
+        $data = $request->validate([
+            'hierarchy_node_id' => ['nullable', 'integer', 'exists:hierarchy_nodes,id'],
+        ]);
+        $companyId = $request->input('company_id')
+            ?? $request->user()?->company_id
+            ?? $request->user()?->employee?->company_id;
+        $this->assertHierarchyNodeCompany($data['hierarchy_node_id'] ?? null, $companyId);
+
         $geofence = Geofence::create($request->only([
             'company_id',
             'area_id',
+            'hierarchy_node_id',
             'firm_name',
             'latitude',
             'longitude',
@@ -69,6 +81,7 @@ class GeofeneService
         return $geofence->load([
             'company:id,company_name',
             'user:id,name',
+            'hierarchyNode:id,name,hierarchy_level_id,parent_id',
         ]);
     }
 
@@ -77,7 +90,11 @@ class GeofeneService
         if (!auth()->user()->can('market.edit')) {
             abort(403, 'You do not have permission to edit market.');
         }        
-        return $this->findAccessibleGeofence($id)->load(['company:id,company_name', 'user:id,name']);
+        return $this->findAccessibleGeofence($id)->load([
+            'company:id,company_name',
+            'user:id,name',
+            'hierarchyNode:id,name,hierarchy_level_id,parent_id',
+        ]);
     }
 
     public function update(Request $request, $id)
@@ -87,9 +104,19 @@ class GeofeneService
         }        
         $geofence = $this->findAccessibleGeofence($id);
 
+        $data = $request->validate([
+            'hierarchy_node_id' => ['sometimes', 'nullable', 'integer', 'exists:hierarchy_nodes,id'],
+        ]);
+        $companyId = $request->input('company_id', $geofence->company_id);
+        $nodeId = array_key_exists('hierarchy_node_id', $data)
+            ? $data['hierarchy_node_id']
+            : $geofence->hierarchy_node_id;
+        $this->assertHierarchyNodeCompany($nodeId, $companyId);
+
         $geofence->update($request->only([
             'company_id',
             'area_id',
+            'hierarchy_node_id',
             'firm_name',
             'latitude',
             'longitude',
@@ -103,6 +130,7 @@ class GeofeneService
         return $geofence->fresh([
             'company:id,company_name',
             'user:id,name',
+            'hierarchyNode:id,name,hierarchy_level_id,parent_id',
         ]);
     }
 
@@ -122,5 +150,18 @@ class GeofeneService
         $this->hierarchyAccessService->applyGeofenceAccess($query);
 
         return $query->firstOrFail();
+    }
+
+    private function assertHierarchyNodeCompany(mixed $nodeId, mixed $companyId): void
+    {
+        if ($nodeId === null || $nodeId === '') {
+            return;
+        }
+
+        if (!$companyId || !HierarchyNode::forCompany((int) $companyId)->whereKey($nodeId)->exists()) {
+            throw ValidationException::withMessages([
+                'hierarchy_node_id' => 'The selected hierarchy node does not belong to this company.',
+            ]);
+        }
     }
 }

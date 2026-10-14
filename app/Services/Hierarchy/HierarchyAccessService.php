@@ -4,6 +4,7 @@ namespace App\Services\Hierarchy;
 
 use App\Models\EmployeeHierarchyAssignment;
 use App\Models\Geofence;
+use App\Models\HierarchyNode;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 
@@ -40,6 +41,12 @@ class HierarchyAccessService
 
         if (!$assignment) {
             return null;
+        }
+
+        if ($assignment->hierarchy_node_id) {
+            $node = $assignment->hierarchyNode;
+            $name = $node?->level?->name;
+            return $node?->level?->code ?: ($name ? strtolower(str_replace(' ', '_', $name)) : 'node');
         }
 
         if (!empty($assignment->area_id)) {
@@ -89,6 +96,10 @@ class HierarchyAccessService
             return null;
         }
 
+        if ($assignment->hierarchy_node_id) {
+            return (int) $assignment->hierarchy_node_id;
+        }
+
         $level = $this->getAssignedLevel($assignment);
 
         if (!$level) {
@@ -116,11 +127,24 @@ class HierarchyAccessService
     {
         $user = Auth::user();
 
-        if (!$user || $user->hasRole('Super-Admin') || $user->hasRole('Company Admin')) {
+        if (!$user || $user->hasRole('Super-Admin') || $user->hasAnyRole(['Company Admin', 'admin'])) {
             return $query;
         }
 
         $assignment = $this->currentAssignment();
+
+        if ($assignment?->hierarchy_node_id) {
+            $companyId = $assignment->hierarchyNode?->company_id;
+            if (!$companyId) {
+                return $query->whereRaw('1 = 0');
+            }
+
+            $nodeIds = $this->hierarchyNodeBranchIds((int) $companyId, (int) $assignment->hierarchy_node_id);
+            return $query->whereHas('hierarchyAssignment', fn (Builder $assignmentQuery) =>
+                $assignmentQuery->whereIn('hierarchy_node_id', $nodeIds)
+            );
+        }
+
         $level = $this->getAssignedLevel($assignment);
         $id = $this->getAssignedId($assignment);
 
@@ -171,6 +195,11 @@ class HierarchyAccessService
         if (!$assignment) {
             // No active assignment = no access.
             return $query->whereRaw('1 = 0');
+        }
+
+        if ($assignment->hierarchy_node_id) {
+            $nodeIds = $this->hierarchyNodeBranchIds((int) $companyId, (int) $assignment->hierarchy_node_id);
+            return $query->whereIn('geofences.hierarchy_node_id', $nodeIds);
         }
 
         $level = $this->getAssignedLevel($assignment);
@@ -414,5 +443,24 @@ class HierarchyAccessService
             'id' => $this->getAssignedId($assignment),
             'assignment' => $assignment,
         ];
+    }
+
+    /** @return int[] */
+    private function hierarchyNodeBranchIds(int $companyId, int $nodeId): array
+    {
+        $nodeIds = [$nodeId];
+        $frontier = $nodeIds;
+
+        while ($frontier) {
+            $children = HierarchyNode::forCompany($companyId)
+                ->whereIn('parent_id', $frontier)
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+            $frontier = array_values(array_diff($children, $nodeIds));
+            $nodeIds = array_merge($nodeIds, $frontier);
+        }
+
+        return $nodeIds;
     }
 }

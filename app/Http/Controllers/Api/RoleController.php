@@ -64,8 +64,8 @@ class RoleController extends Controller
     // Update Role
     public function update(Request $request, Role $role)
     {
-        if (!auth()->user()->can('role.edit')) {
-        abort(403, 'You do not have permission to role edit.');
+        if (!auth()->user()->can('role.update')) {
+        abort(403, 'You do not have permission to role update.');
         }        
         $request->validate([
             'name' => 'required|unique:roles,name,' . $role->id,

@@ -8,6 +8,7 @@ class EmployeeHierarchyAssignment extends Model
 {
     protected $fillable = [
         'user_id',
+        'hierarchy_node_id',
         'country_id',
         'region_id',
         'zone_id',
@@ -77,6 +78,11 @@ class EmployeeHierarchyAssignment extends Model
     public function assignedBy()
     {
         return $this->belongsTo(User::class, 'assigned_by');
+    }
+
+    public function hierarchyNode()
+    {
+        return $this->belongsTo(HierarchyNode::class, 'hierarchy_node_id');
     }
     public function user()
     {

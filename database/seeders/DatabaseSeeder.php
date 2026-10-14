@@ -16,13 +16,13 @@ class DatabaseSeeder extends Seeder
         $this->call([
             // PermissionSeeder::class,
             // RoleSeeder::class,
-            CompanySeeder::class,
-            EmployeeSeeder::class,
-            SuperAdminSeeder::class,
+             CompanySeeder::class,
+             EmployeeSeeder::class,
+             SuperAdminSeeder::class,
             // AdminUserSeeder::class,
-            BangladeshLocationSeeder::class,
-            TerritoryAreaSeeder::class,            
-            GeofenceSeeder::class,
+            // BangladeshLocationSeeder::class,
+            // TerritoryAreaSeeder::class,            
+            // GeofenceSeeder::class,
 
         ]);
     }

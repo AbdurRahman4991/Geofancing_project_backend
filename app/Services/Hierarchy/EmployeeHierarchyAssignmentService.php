@@ -3,7 +3,10 @@
 namespace App\Services\Hierarchy;
 
 use App\Models\EmployeeHierarchyAssignment;
+use App\Models\HierarchyNode;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class EmployeeHierarchyAssignmentService
 {
@@ -22,6 +25,7 @@ class EmployeeHierarchyAssignmentService
             'subDistrict',
             'territory',
             'area',
+            'hierarchyNode.level',
             'assignedBy',
         ]);
 
@@ -77,6 +81,10 @@ class EmployeeHierarchyAssignmentService
                 'area_id',
                 $filters['area_id']
             );
+        }
+
+        if (!empty($filters['hierarchy_node_id'])) {
+            $query->where('hierarchy_node_id', $filters['hierarchy_node_id']);
         }
 
         // Current assignment filter
@@ -196,6 +204,8 @@ class EmployeeHierarchyAssignmentService
             'sub_district' => $assignment->subDistrict?->name,
             'territory' => $assignment->territory?->name,
             'area' => $assignment->area?->name,
+            'hierarchy_node_id' => $assignment->hierarchy_node_id,
+            'hierarchy_node' => $assignment->hierarchyNode?->name,
             'effective_from' => $assignment->effective_from,
             'effective_to' => $assignment->effective_to,
             'is_current' => $assignment->is_current,
@@ -213,6 +223,7 @@ class EmployeeHierarchyAssignmentService
     public function create(array $data): EmployeeHierarchyAssignment
     {
         return DB::transaction(function () use ($data) {
+            $this->assertHierarchyNodeMatchesUser($data['user_id'], $data['hierarchy_node_id'] ?? null);
             $assignment = EmployeeHierarchyAssignment::where('user_id', $data['user_id'])
                 ->where('is_current', true)
                 ->first();
@@ -220,6 +231,8 @@ class EmployeeHierarchyAssignmentService
             $attributes = [
                 'is_current' => true,
                 'assigned_by' => auth()->id(),
+                // A legacy assignment payload without a node clears a prior node assignment.
+                'hierarchy_node_id' => $data['hierarchy_node_id'] ?? null,
             ];
 
             foreach ([
@@ -231,6 +244,7 @@ class EmployeeHierarchyAssignmentService
                 'sub_district_id',
                 'territory_id',
                 'area_id',
+                'hierarchy_node_id',
                 'effective_from',
                 'reason',
             ] as $field) {
@@ -258,6 +272,7 @@ class EmployeeHierarchyAssignmentService
                 'subDistrict',
                 'territory',
                 'area',
+                'hierarchyNode.level',
                 'assignedBy',
             ]);
         });
@@ -278,6 +293,7 @@ class EmployeeHierarchyAssignmentService
             'subDistrict',
             'territory',
             'area',
+            'hierarchyNode.level',
             'assignedBy',
         ])->find($id);
     }
@@ -300,6 +316,7 @@ class EmployeeHierarchyAssignmentService
             $assignment,
             $data
         ) {
+            $this->assertHierarchyNodeMatchesUser($data['user_id'], $data['hierarchy_node_id'] ?? null);
 
             /*
              * Same user-এর অন্য assignment inactive
@@ -318,15 +335,16 @@ class EmployeeHierarchyAssignmentService
              */
             $assignment->update([
                 'user_id' => $data['user_id'],
-                'country_id' => $data['country_id'],
-                'region_id' => $data['region_id'],
-                'zone_id' => $data['zone_id'],
-                'division_id' => $data['division_id'],
-                'district_id' => $data['district_id'],
-                'sub_district_id' => $data['sub_district_id'],
-                'territory_id' => $data['territory_id'],
-                'area_id' => $data['area_id'],
-                'effective_from' => $data['effective_from'],
+                'country_id' => $data['country_id'] ?? null,
+                'region_id' => $data['region_id'] ?? null,
+                'zone_id' => $data['zone_id'] ?? null,
+                'division_id' => $data['division_id'] ?? null,
+                'district_id' => $data['district_id'] ?? null,
+                'sub_district_id' => $data['sub_district_id'] ?? null,
+                'territory_id' => $data['territory_id'] ?? null,
+                'area_id' => $data['area_id'] ?? null,
+                'hierarchy_node_id' => $data['hierarchy_node_id'] ?? null,
+                'effective_from' => $data['effective_from'] ?? null,
                 'reason' => $data['reason'] ?? null,
                 'is_current' => true,
                 'assigned_by' => auth()->id(),
@@ -342,6 +360,7 @@ class EmployeeHierarchyAssignmentService
                 'subDistrict',
                 'territory',
                 'area',
+                'hierarchyNode.level',
                 'assignedBy',
             ]);
         });
@@ -359,5 +378,20 @@ class EmployeeHierarchyAssignmentService
         }
 
         return (bool) $assignment->delete();
+    }
+
+    private function assertHierarchyNodeMatchesUser(int $userId, mixed $nodeId): void
+    {
+        if ($nodeId === null || $nodeId === '') {
+            return;
+        }
+
+        $user = User::with('employee')->findOrFail($userId);
+        $companyId = $user->company_id ?? $user->employee?->company_id;
+        if (!$companyId || !HierarchyNode::forCompany((int) $companyId)->whereKey($nodeId)->exists()) {
+            throw ValidationException::withMessages([
+                'hierarchy_node_id' => 'The selected hierarchy node does not belong to the assigned user company.',
+            ]);
+        }
     }
 }

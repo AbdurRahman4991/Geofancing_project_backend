@@ -18,11 +18,11 @@ return new class extends Migration
             ->onDelete('cascade');
             $table->foreignId('company_id')
             ->constrained('companies')
-            ->cascadeOnDelete(); // যেমন: Head Office, Uttara Zone, Mirpur Area            
+            ->cascadeOnDelete();            
             $table->string('firm_name');
             $table->decimal('latitude', 10, 7);
             $table->decimal('longitude', 10, 7);
-            $table->integer('radius')->default(100); // মিটারে এলাকা
+            $table->integer('radius')->default(100); 
             $table->timestamps();
         });
     }

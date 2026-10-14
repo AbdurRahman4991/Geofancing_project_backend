@@ -12,6 +12,7 @@ class Geofence extends Model implements HasMedia
 
     protected $fillable = [
         'area_id',
+        'hierarchy_node_id',
         'company_id',
         'user_id',
         'firm_name',
@@ -42,6 +43,11 @@ class Geofence extends Model implements HasMedia
     public function area()
     {
         return $this->belongsTo(Area::class);
+    }
+
+    public function hierarchyNode()
+    {
+        return $this->belongsTo(HierarchyNode::class, 'hierarchy_node_id');
     }
 
     /**
