@@ -222,7 +222,7 @@ class AuthController extends Controller
         ])
         ->with([
             'employee:id,name,employee_id,company_id,designation',
-            'hierarchyAssignment:id,user_id,country_id,region_id,zone_id,division_id,district_id,sub_district_id,area_id,territory_id'
+            'hierarchyAssignment:id,user_id,hierarchy_node_id'
         ])
         ->where('email', $request->email)
         ->first();
@@ -233,10 +233,17 @@ class AuthController extends Controller
             ]);
         }
 
-       $areaId = $user->hierarchyAssignment?->area_id;
+        if ($user->status !== 'active') {
+            return response()->json([
+                'status' => 403,
+                'message' => 'Your account is inactive.',
+            ], 403);
+        }
+
+        $hierarchyNodeId = $user->hierarchyAssignment?->hierarchy_node_id;
         $userGeoFancing = collect();
-        if ($areaId) {
-            $userGeoFancing = Geofence::where('area_id', $areaId)
+        if ($hierarchyNodeId) {
+            $userGeoFancing = Geofence::where('hierarchy_node_id', $hierarchyNodeId)
                 ->select(
                     'latitude',
                     'longitude',

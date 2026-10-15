@@ -22,7 +22,7 @@ class HierarchyNodeService
             ->when(isset($filters['status']), fn ($query) => $query->where('status', $filters['status']))
             ->when(!empty($filters['search']), fn ($query) => $query->where('name', 'like', '%' . $filters['search'] . '%'))
             ->orderBy('name')
-            ->paginate(min(max((int) ($filters['per_page'] ?? 15), 1), 100))
+            ->paginate(min(max((int) ($filters['per_page'] ?? 10), 1), 100))
             ->withQueryString();
     }
 
