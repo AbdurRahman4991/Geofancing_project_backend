@@ -34,7 +34,7 @@ class GeofenceController extends Controller
     {
         $request->validate([
             'company_id' => 'required|integer',
-            'area_id' => 'required|integer',
+            'area_id' => 'nullable|integer',
             'firm_name' => 'required|string',
             'latitude' => 'required|numeric',
             'longitude' => 'required|numeric',

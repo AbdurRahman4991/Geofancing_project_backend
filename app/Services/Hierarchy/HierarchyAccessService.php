@@ -186,7 +186,7 @@ class HierarchyAccessService
 
         // Company Admins have company-wide access; other roles also need
         // to pass the hierarchy restriction below.
-        if ($user?->hasRole('Company Admin')) {
+        if ($user?->hasRole(['Company Admin', 'admin'])) {
             return $query;
         }
 

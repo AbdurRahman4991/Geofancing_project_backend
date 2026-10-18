@@ -57,6 +57,11 @@ return new class extends Migration
                 ->nullable()
                 ->constrained('areas')
                 ->nullOnDelete();
+             $table->foreignId('hierarchy_node_id')
+                ->nullable()
+                ->after('user_id')
+                ->constrained('hierarchy_nodes')
+                ->nullOnDelete();
 
             $table->date('effective_from')->nullable();
 

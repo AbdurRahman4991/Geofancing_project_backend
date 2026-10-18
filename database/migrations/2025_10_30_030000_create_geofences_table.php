@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('geofences', function (Blueprint $table) {
             $table->id();
             $table->foreignId('area_id')
+            ->nullable()
             ->constrained('areas')
             ->onDelete('cascade');
             $table->foreignId('company_id')

@@ -361,7 +361,7 @@ class AttendanceService
                         ->orWhere('employee_id', 'like', "%{$search}%");
                 });
             }
-        } elseif ($user->hasRole('Company Admin')) {
+        } elseif ($user->hasRole('admin')) {
             $companyId = $user->employee?->company_id;
 
             if (!$companyId) {

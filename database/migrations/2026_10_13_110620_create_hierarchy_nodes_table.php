@@ -15,15 +15,24 @@ return new class extends Migration
             $table->string('name', 150);
             $table->string('code', 100)->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active');
+
+            $table->foreignId('parent_id')
+                ->nullable()
+                ->after('hierarchy_level_id')
+                ->constrained('hierarchy_nodes')
+                ->nullOnDelete();
+
             $table->timestamps();
 
             $table->index(['company_id', 'hierarchy_level_id']);           
             $table->unique(['company_id', 'hierarchy_level_id', 'code']);
+             $table->index(['company_id', 'parent_id']);
         });
     }
 
     public function down(): void
     {
         Schema::dropIfExists('hierarchy_nodes');
+         
     }
 };
