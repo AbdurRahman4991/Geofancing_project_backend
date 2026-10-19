@@ -27,6 +27,13 @@ class UserController extends Controller
         ])
         ->select('id', 'employee_id', 'name');
         $this->scopeToCurrentCompany($query);
+
+        if ($request->filled('company_id')) {
+            $request->validate([
+                'company_id' => ['integer', 'exists:companies,id'],
+            ]);
+            $query->where('users.company_id', $request->input('company_id'));
+        }
         $this->hierarchyAccessService->applyUserHierarchyAccess($query);
 
         // Search by employee name or employee id

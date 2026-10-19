@@ -1,0 +1,20 @@
+<?php
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+return new class extends Migration {
+    public function up(): void {
+        Schema::table('roles', function (Blueprint $table) {
+            $table->foreignId('company_id')->nullable()->after('id')->constrained()->cascadeOnDelete();
+            $table->dropUnique(['name', 'guard_name']);
+            $table->unique(['company_id', 'name', 'guard_name']);
+        });
+    }
+    public function down(): void {
+        Schema::table('roles', function (Blueprint $table) {
+            $table->dropUnique(['company_id', 'name', 'guard_name']);
+            $table->dropConstrainedForeignId('company_id');
+            $table->unique(['name', 'guard_name']);
+        });
+    }
+};

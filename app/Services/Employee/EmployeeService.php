@@ -49,6 +49,13 @@ public function index(Request $request)
         );
     }
 
+    if ($request->filled('company_id')) {
+        $query->where(
+            'employees.company_id',
+             $request->company_id
+        );
+    }
+
     // ↕️ Sorting
     $allowedSortColumns = [
         'id',
