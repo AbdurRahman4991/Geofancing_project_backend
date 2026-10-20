@@ -5,6 +5,7 @@ namespace App\Services\Hierarchy;
 use App\Models\EmployeeHierarchyAssignment;
 use App\Models\HierarchyNode;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -15,16 +16,9 @@ class EmployeeHierarchyAssignmentService
      */
     public function getAll(array $filters = [])
     {
-        $query = EmployeeHierarchyAssignment::with([
+        $query = $this->scopeForCurrentUser(EmployeeHierarchyAssignment::query())->with([
             'user',
-            'country',
-            'region',
-            'zone',
-            'division',
-            'district',
-            'subDistrict',
-            'territory',
-            'area',
+            'company',
             'hierarchyNode.level',
             'assignedBy',
         ]);
@@ -34,53 +28,9 @@ class EmployeeHierarchyAssignmentService
             $query->where('user_id', $filters['user_id']);
         }
 
-        // Country filter
-        if (!empty($filters['country_id'])) {
-            $query->where('country_id', $filters['country_id']);
-        }
-
-        // Region filter
-        if (!empty($filters['region_id'])) {
-            $query->where('region_id', $filters['region_id']);
-        }
-
-        // Zone filter
-        if (!empty($filters['zone_id'])) {
-            $query->where('zone_id', $filters['zone_id']);
-        }
-
-        // Division filter
-        if (!empty($filters['division_id'])) {
-            $query->where('division_id', $filters['division_id']);
-        }
-
-        // District filter
-        if (!empty($filters['district_id'])) {
-            $query->where('district_id', $filters['district_id']);
-        }
-
-        // Sub District filter
-        if (!empty($filters['sub_district_id'])) {
-            $query->where(
-                'sub_district_id',
-                $filters['sub_district_id']
-            );
-        }
-
-        // Territory filter
-        if (!empty($filters['territory_id'])) {
-            $query->where(
-                'territory_id',
-                $filters['territory_id']
-            );
-        }
-
-        // Area filter
-        if (!empty($filters['area_id'])) {
-            $query->where(
-                'area_id',
-                $filters['area_id']
-            );
+        // Super Admin may narrow results to one company; other users are scoped below.
+        if (!empty($filters['company_id']) && auth()->user()?->hasRole('Super-Admin')) {
+            $query->where('company_id', $filters['company_id']);
         }
 
         if (!empty($filters['hierarchy_node_id'])) {
@@ -104,76 +54,18 @@ class EmployeeHierarchyAssignmentService
 
             $query->where(function ($q) use ($search) {
 
-                $q->where('reason', 'like', "%{$search}%")
-
-                    ->orWhereHas('user', function ($userQuery) use ($search) {
+                $q->whereHas('user', function ($userQuery) use ($search) {
                         $userQuery
                             ->where('name', 'like', "%{$search}%")
                             ->orWhere('email', 'like', "%{$search}%");
                     })
-
-                    ->orWhereHas('country', function ($countryQuery) use ($search) {
-                        $countryQuery->where(
-                            'name',
-                            'like',
-                            "%{$search}%"
-                        );
-                    })
-
-                    ->orWhereHas('region', function ($regionQuery) use ($search) {
-                        $regionQuery->where(
-                            'name',
-                            'like',
-                            "%{$search}%"
-                        );
-                    })
-
-                    ->orWhereHas('zone', function ($zoneQuery) use ($search) {
-                        $zoneQuery->where(
-                            'name',
-                            'like',
-                            "%{$search}%"
-                        );
-                    })
-
-                    ->orWhereHas('division', function ($divisionQuery) use ($search) {
-                        $divisionQuery->where(
-                            'name',
-                            'like',
-                            "%{$search}%"
-                        );
-                    })
-
-                    ->orWhereHas('district', function ($districtQuery) use ($search) {
-                        $districtQuery->where(
-                            'name',
-                            'like',
-                            "%{$search}%"
-                        );
-                    })
-
-                    ->orWhereHas('subDistrict', function ($subDistrictQuery) use ($search) {
-                        $subDistrictQuery->where(
-                            'name',
-                            'like',
-                            "%{$search}%"
-                        );
-                    })
-
-                    ->orWhereHas('territory', function ($territoryQuery) use ($search) {
-                        $territoryQuery->where(
-                            'name',
-                            'like',
-                            "%{$search}%"
-                        );
-                    })
-
-                    ->orWhereHas('area', function ($areaQuery) use ($search) {
-                        $areaQuery->where(
-                            'name',
-                            'like',
-                            "%{$search}%"
-                        );
+                    ->orWhereHas('hierarchyNode', function ($nodeQuery) use ($search) {
+                        $nodeQuery->where('name', 'like', "%{$search}%")
+                            ->orWhere('code', 'like', "%{$search}%")
+                            ->orWhereHas('level', function ($levelQuery) use ($search) {
+                                $levelQuery->where('name', 'like', "%{$search}%")
+                                    ->orWhere('code', 'like', "%{$search}%");
+                            });
                     });
             });
         }
@@ -185,34 +77,20 @@ class EmployeeHierarchyAssignmentService
             ->paginate($perPage)
             ->withQueryString();
 
-        // Transform each row
-        $assignments = $query
-        ->latest()
-        ->paginate($perPage)
-        ->withQueryString();
-
-    $assignments->getCollection()->transform(function ($assignment) {
-
-        return [
-            'id' => $assignment->id,
-            'user' => $assignment->user?->name,
-            'country' => $assignment->country?->name,
-            'region' => $assignment->region?->name,
-            'zone' => $assignment->zone?->name,
-            'division' => $assignment->division?->name,
-            'district' => $assignment->district?->name,
-            'sub_district' => $assignment->subDistrict?->name,
-            'territory' => $assignment->territory?->name,
-            'area' => $assignment->area?->name,
-            'hierarchy_node_id' => $assignment->hierarchy_node_id,
-            'hierarchy_node' => $assignment->hierarchyNode?->name,
-            'effective_from' => $assignment->effective_from,
-            'effective_to' => $assignment->effective_to,
-            'is_current' => $assignment->is_current,
-            'assigned_by' => $assignment->assignedBy?->name,
-            'reason' => $assignment->reason,
-        ];
-    });
+        $assignments->getCollection()->transform(function ($assignment) {
+            return [
+                'id' => $assignment->id,
+                'user' => $assignment->user?->name,
+                'company_id' => $assignment->company_id,
+                'company' => $assignment->company?->name,
+                'hierarchy_node_id' => $assignment->hierarchy_node_id,
+                'hierarchy_node' => $assignment->hierarchyNode?->name,
+                'hierarchy_level' => $assignment->hierarchyNode?->level?->name,
+                'hierarchy_level_code' => $assignment->hierarchyNode?->level?->code,
+                'is_current' => $assignment->is_current,
+                'assigned_by' => $assignment->assignedBy?->name,
+            ];
+        });
 
     return $assignments;
     }
@@ -223,37 +101,24 @@ class EmployeeHierarchyAssignmentService
     public function create(array $data): EmployeeHierarchyAssignment
     {
         return DB::transaction(function () use ($data) {
+            $user = User::with('employee')->findOrFail($data['user_id']);
+            $companyId = (int) ($user->company_id ?? $user->employee?->company_id);
+            if (!$companyId) {
+                throw ValidationException::withMessages(['user_id' => 'The selected user is not associated with a company.']);
+            }
+            $this->assertCompanyAccess($companyId);
             $this->assertHierarchyNodeMatchesUser($data['user_id'], $data['hierarchy_node_id'] ?? null);
             $assignment = EmployeeHierarchyAssignment::where('user_id', $data['user_id'])
+                ->where('company_id', $companyId)
                 ->where('is_current', true)
                 ->first();
 
             $attributes = [
+                'company_id' => $companyId,
                 'is_current' => true,
                 'assigned_by' => auth()->id(),
-                // A legacy assignment payload without a node clears a prior node assignment.
                 'hierarchy_node_id' => $data['hierarchy_node_id'] ?? null,
             ];
-
-            foreach ([
-                'country_id',
-                'region_id',
-                'zone_id',
-                'division_id',
-                'district_id',
-                'sub_district_id',
-                'territory_id',
-                'area_id',
-                'hierarchy_node_id',
-                'effective_from',
-                'reason',
-            ] as $field) {
-                if (array_key_exists($field, $data)) {
-                    $attributes[$field] = $data[$field];
-                } elseif (!$assignment) {
-                    $attributes[$field] = null;
-                }
-            }
 
             if ($assignment) {
                 $assignment->update($attributes);
@@ -264,14 +129,7 @@ class EmployeeHierarchyAssignmentService
 
             return $assignment->load([
                 'user',
-                'country',
-                'region',
-                'zone',
-                'division',
-                'district',
-                'subDistrict',
-                'territory',
-                'area',
+                'company',                
                 'hierarchyNode.level',
                 'assignedBy',
             ]);
@@ -283,16 +141,9 @@ class EmployeeHierarchyAssignmentService
      */
     public function getById(int $id): ?EmployeeHierarchyAssignment
     {
-        return EmployeeHierarchyAssignment::with([
+        return $this->scopeForCurrentUser(EmployeeHierarchyAssignment::query())->with([
             'user',
-            'country',
-            'region',
-            'zone',
-            'division',
-            'district',
-            'subDistrict',
-            'territory',
-            'area',
+            'company',            
             'hierarchyNode.level',
             'assignedBy',
         ])->find($id);
@@ -306,7 +157,7 @@ class EmployeeHierarchyAssignmentService
         array $data
     ): ?EmployeeHierarchyAssignment {
 
-        $assignment = EmployeeHierarchyAssignment::find($id);
+        $assignment = $this->scopeForCurrentUser(EmployeeHierarchyAssignment::query())->find($id);
 
         if (!$assignment) {
             return null;
@@ -316,15 +167,22 @@ class EmployeeHierarchyAssignmentService
             $assignment,
             $data
         ) {
+            $user = User::with('employee')->findOrFail($data['user_id']);
+            $companyId = (int) ($user->company_id ?? $user->employee?->company_id);
+            if (!$companyId) {
+                throw ValidationException::withMessages(['user_id' => 'The selected user is not associated with a company.']);
+            }
+            $this->assertCompanyAccess($companyId);
             $this->assertHierarchyNodeMatchesUser($data['user_id'], $data['hierarchy_node_id'] ?? null);
 
             /*
              * Same user-এর অন্য assignment inactive
              */
-            EmployeeHierarchyAssignment::where(
+            $this->scopeForCurrentUser(EmployeeHierarchyAssignment::query())->where(
                 'user_id',
                 $data['user_id']
             )
+                ->where('company_id', $companyId)
                 ->where('id', '!=', $assignment->id)
                 ->update([
                     'is_current' => false,
@@ -335,31 +193,15 @@ class EmployeeHierarchyAssignmentService
              */
             $assignment->update([
                 'user_id' => $data['user_id'],
-                'country_id' => $data['country_id'] ?? null,
-                'region_id' => $data['region_id'] ?? null,
-                'zone_id' => $data['zone_id'] ?? null,
-                'division_id' => $data['division_id'] ?? null,
-                'district_id' => $data['district_id'] ?? null,
-                'sub_district_id' => $data['sub_district_id'] ?? null,
-                'territory_id' => $data['territory_id'] ?? null,
-                'area_id' => $data['area_id'] ?? null,
-                'hierarchy_node_id' => $data['hierarchy_node_id'] ?? null,
-                'effective_from' => $data['effective_from'] ?? null,
-                'reason' => $data['reason'] ?? null,
+                'company_id' => $companyId,
+                'hierarchy_node_id' => $data['hierarchy_node_id'] ?? null,                
                 'is_current' => true,
                 'assigned_by' => auth()->id(),
             ]);
 
             return $assignment->load([
                 'user',
-                'country',
-                'region',
-                'zone',
-                'division',
-                'district',
-                'subDistrict',
-                'territory',
-                'area',
+                'company',                
                 'hierarchyNode.level',
                 'assignedBy',
             ]);
@@ -371,7 +213,7 @@ class EmployeeHierarchyAssignmentService
      */
     public function delete(int $id): bool
     {
-        $assignment = EmployeeHierarchyAssignment::find($id);
+        $assignment = $this->scopeForCurrentUser(EmployeeHierarchyAssignment::query())->find($id);
 
         if (!$assignment) {
             return false;
@@ -392,6 +234,88 @@ class EmployeeHierarchyAssignmentService
             throw ValidationException::withMessages([
                 'hierarchy_node_id' => 'The selected hierarchy node does not belong to the assigned user company.',
             ]);
+        }
+
+        $actor = auth()->user();
+        if (!$actor || $actor->hasRole('Super-Admin') || $actor->hasAnyRole(['Company Admin', 'admin'])) {
+            return;
+        }
+
+        $actorCompanyId = $actor->company_id ?? $actor->employee?->company_id;
+        $actorAssignment = EmployeeHierarchyAssignment::query()
+            ->where('user_id', $actor->id)
+            ->where('company_id', $actorCompanyId)
+            ->where('is_current', true)
+            ->first();
+        if (!$actorAssignment?->hierarchy_node_id || !in_array(
+            (int) $nodeId,
+            $this->hierarchyNodeBranchIds((int) $actorCompanyId, (int) $actorAssignment->hierarchy_node_id),
+            true
+        )) {
+            throw ValidationException::withMessages([
+                'hierarchy_node_id' => 'The selected hierarchy node is outside your hierarchy access.',
+            ]);
+        }
+    }
+
+    private function scopeForCurrentUser(Builder $query): Builder
+    {
+        $user = auth()->user();
+        if (!$user) {
+            return $query->whereRaw('1 = 0');
+        }
+        if ($user->hasRole('Super-Admin')) {
+            return $query;
+        }
+
+        $companyId = $user->company_id ?? $user->employee?->company_id;
+        if (!$companyId) {
+            return $query->whereRaw('1 = 0');
+        }
+        $query->where('company_id', $companyId);
+        if ($user->hasAnyRole(['Company Admin', 'admin'])) {
+            return $query;
+        }
+
+        $current = EmployeeHierarchyAssignment::query()
+            ->where('user_id', $user->id)
+            ->where('company_id', $companyId)
+            ->where('is_current', true)
+            ->first();
+        if (!$current?->hierarchy_node_id) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->whereIn(
+            'hierarchy_node_id',
+            $this->hierarchyNodeBranchIds((int) $companyId, (int) $current->hierarchy_node_id)
+        );
+    }
+
+    /** @return int[] */
+    private function hierarchyNodeBranchIds(int $companyId, int $nodeId): array
+    {
+        $nodeIds = [$nodeId];
+        $frontier = $nodeIds;
+        while ($frontier !== []) {
+            $children = HierarchyNode::forCompany((int) $companyId)
+                ->whereIn('parent_id', $frontier)
+                ->pluck('id')->map(fn ($id) => (int) $id)->all();
+            $frontier = array_values(array_diff($children, $nodeIds));
+            $nodeIds = array_merge($nodeIds, $frontier);
+        }
+        return $nodeIds;
+    }
+
+    private function assertCompanyAccess(int $targetCompanyId): void
+    {
+        $user = auth()->user();
+        if ($user?->hasRole('Super-Admin')) {
+            return;
+        }
+        $companyId = $user?->company_id ?? $user?->employee?->company_id;
+        if (!$companyId || (int) $companyId !== $targetCompanyId) {
+            throw ValidationException::withMessages(['user_id' => 'The selected user is outside your company access.']);
         }
     }
 }

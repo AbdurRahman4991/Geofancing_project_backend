@@ -40,16 +40,6 @@ class EmployeeHierarchyAssignController extends Controller
         $validated = $request->validate([
             'user_id' => ['required', 'integer', 'exists:users,id'],
             'hierarchy_node_id' => ['nullable', 'integer', 'exists:hierarchy_nodes,id'],
-            'country_id' => ['nullable', 'integer', 'exists:countries,id'],
-            'region_id' => ['nullable', 'integer', 'exists:regions,id'],
-            'zone_id' => ['nullable', 'integer', 'exists:zones,id'],
-            'division_id' => ['nullable', 'integer', 'exists:divisions,id'],
-            'district_id' => ['nullable', 'integer', 'exists:districts,id'],
-            'sub_district_id' => ['nullable', 'integer', 'exists:sub_districts,id'],
-            'territory_id' => ['nullable', 'integer', 'exists:territories,id'],
-            'area_id' => ['nullable', 'integer', 'exists:areas,id'],
-            'effective_from' => ['nullable', 'date'],
-            'reason' => ['nullable', 'string', 'max:1000'],
         ]);
 
         $assignment = $this->service->create($validated);
@@ -90,16 +80,6 @@ class EmployeeHierarchyAssignController extends Controller
         $validated = $request->validate([
             'user_id' => ['required', 'integer', 'exists:users,id'],
             'hierarchy_node_id' => ['nullable', 'integer', 'exists:hierarchy_nodes,id'],
-            'country_id' => ['nullable', 'integer', 'exists:countries,id'],
-            'region_id' => ['nullable', 'integer', 'exists:regions,id'],
-            'zone_id' => ['nullable', 'integer', 'exists:zones,id'],
-            'division_id' => ['nullable', 'integer', 'exists:divisions,id'],
-            'district_id' => ['nullable', 'integer', 'exists:districts,id'],
-            'sub_district_id' => ['nullable', 'integer', 'exists:sub_districts,id'],
-            'territory_id' => ['nullable', 'integer', 'exists:territories,id'],
-            'area_id' => ['nullable', 'integer', 'exists:areas,id'],
-            'effective_from' => ['nullable', 'date'],
-            'reason' => ['nullable', 'string', 'max:1000'],
         ]);
 
         $assignment = $this->service->update($id, $validated);

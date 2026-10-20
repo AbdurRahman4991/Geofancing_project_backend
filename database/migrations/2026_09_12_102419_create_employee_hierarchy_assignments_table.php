@@ -17,56 +17,13 @@ return new class extends Migration
             $table->foreignId('user_id')
                 ->constrained('users')
                 ->cascadeOnDelete();
-
-            $table->foreignId('country_id')
-                ->nullable()
-                ->constrained('countries')
-                ->nullOnDelete();
-
-            $table->foreignId('region_id')
-                ->nullable()
-                ->constrained('regions')
-                ->nullOnDelete();
-
-            $table->foreignId('zone_id')
-                ->nullable()
-                ->constrained('zones')
-                ->nullOnDelete();
-
-            $table->foreignId('division_id')
-                ->nullable()
-                ->constrained('divisions')
-                ->nullOnDelete();
-
-            $table->foreignId('district_id')
-                ->nullable()
-                ->constrained('districts')
-                ->nullOnDelete();
-
-            $table->foreignId('sub_district_id')
-                ->nullable()
-                ->constrained('sub_districts')
-                ->nullOnDelete();
-
-            $table->foreignId('territory_id')
-                ->nullable()
-                ->constrained('territories')
-                ->nullOnDelete();
-
-            $table->foreignId('area_id')
-                ->nullable()
-                ->constrained('areas')
-                ->nullOnDelete();
+             $table->foreignId('company_id')
+                ->constrained('companies')
+                ->cascadeOnDelete();
              $table->foreignId('hierarchy_node_id')
                 ->nullable()
-                ->after('user_id')
                 ->constrained('hierarchy_nodes')
                 ->nullOnDelete();
-
-            $table->date('effective_from')->nullable();
-
-            $table->date('effective_to')
-                ->nullable();
 
             $table->boolean('is_current')
                 ->default(true);
@@ -76,19 +33,11 @@ return new class extends Migration
                 ->constrained('users')
                 ->nullOnDelete();
 
-            $table->text('reason')
-                ->nullable();
-
             $table->timestamps();
 
             $table->index([
                 'user_id',
                 'is_current'
-            ]);
-
-            $table->index([
-                'territory_id',
-                'area_id'
             ]);
         });
     
