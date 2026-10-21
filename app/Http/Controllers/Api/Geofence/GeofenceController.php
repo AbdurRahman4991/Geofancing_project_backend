@@ -20,21 +20,16 @@ class GeofenceController extends Controller
         $this->hierarchyAccessService = $hierarchyAccessService;
         
     }
-   
-
+    
     public function index(Request $request)
     {
         return $this->service->index($request);
     }
 
-
-
-
     public function store(Request $request)
     {
         $request->validate([
-            'company_id' => 'required|integer',
-            'area_id' => 'nullable|integer',
+            'company_id' => 'required|integer',            
             'firm_name' => 'required|string',
             'latitude' => 'required|numeric',
             'longitude' => 'required|numeric',
@@ -54,8 +49,7 @@ class GeofenceController extends Controller
     public function update(Request $request, $id)
     {
         $request->validate([
-            'company_id' => 'sometimes|integer|max:255',
-            'area_id' => 'sometimes|integer',
+            'company_id' => 'sometimes|integer|max:255',            
             'firm_name' => 'required|string',
             'latitude' => 'sometimes|numeric',
             'longitude' => 'sometimes|numeric',

@@ -15,6 +15,7 @@ class Geofence extends Model implements HasMedia
         'company_id',
         'user_id',
         'firm_name',
+        'address',
         'latitude',
         'longitude',
         'radius',

@@ -23,7 +23,7 @@ public function index(Request $request)
 
     $query = Employee::with([
         'company:id,company_name'
-    ]);
+    ])->withExists('user');
 
     $this->scopeToCurrentCompany($query);
 
@@ -57,6 +57,17 @@ public function index(Request $request)
     }
 
     // ↕️ Sorting
+    if ($request->filled('registration_status')) {
+        $request->validate([
+            'registration_status' => ['required', 'in:registered,not_registered'],
+        ]);
+
+        if ($request->input('registration_status') === 'registered') {
+            $query->whereHas('user');
+        } else {
+            $query->whereDoesntHave('user');
+        }
+    }
     $allowedSortColumns = [
         'id',
         'name',
@@ -86,6 +97,18 @@ public function index(Request $request)
     $employees = $query->paginate(
         $request->get('per_page', 10)
     );
+
+    $employees->getCollection()->transform(function ($employee) {
+        $isRegistered = (bool) $employee->user_exists;
+        unset($employee->user_exists);
+        $employee->setAttribute('is_registered', $isRegistered);
+        $employee->setAttribute(
+            'registration_status',
+            $isRegistered ? 'registered' : 'not_registered'
+        );
+
+        return $employee;
+    });
 
     return response()->json([
         'status'  => 200,

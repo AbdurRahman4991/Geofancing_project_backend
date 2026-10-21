@@ -18,6 +18,7 @@ return new class extends Migration
             ->cascadeOnDelete();
             $table->foreignId('hierarchy_node_id')->nullable()->constrained('hierarchy_nodes')->nullOnDelete();
             $table->string('firm_name');
+            $table->string('address')->nullable();
             $table->decimal('latitude', 10, 7);
             $table->decimal('longitude', 10, 7);
             $table->integer('radius')->default(100);

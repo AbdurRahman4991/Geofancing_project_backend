@@ -4,6 +4,7 @@ namespace App\Services\Geofence;
 
 use App\Models\Geofence;
 use App\Models\HierarchyNode;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use App\Services\Hierarchy\HierarchyAccessService;
@@ -24,6 +25,9 @@ class GeofeneService
         $query = Geofence::with([
             'company:id,company_name',
             'hierarchyNode:id,name,hierarchy_level_id,parent_id',
+        ])->withExists([
+            'attendances as visited_today' => fn ($attendanceQuery) =>
+                $attendanceQuery->whereDate('check_in_time', Carbon::today('Asia/Dhaka')),
         ]);
         $this->hierarchyAccessService->applyGeofenceAccess($query);
 
@@ -38,10 +42,22 @@ class GeofeneService
             });
         }
 
+        $geofences = $query->latest()->paginate($request->integer('per_page', 10));
+        $geofences->getCollection()->transform(function ($geofence) {
+            $visitedToday = (bool) $geofence->visited_today;
+            $geofence->setAttribute('visited_today', $visitedToday);
+            $geofence->setAttribute(
+                'visit_status',
+                $visitedToday ? 'visited' : 'not_visited'
+            );
+
+            return $geofence;
+        });
+
         return response()->json([
             'status' => 200,
             'message' => 'Geofence list retrieved successfully',
-            'data' => $query->latest()->paginate($request->integer('per_page', 10)),
+            'data' => $geofences,
         ]);
     }
 
