@@ -39,6 +39,7 @@ return new class extends Migration
                 'user_id',
                 'is_current'
             ]);
+            $table->index(['user_id', 'hierarchy_node_id', 'is_current']);
         });
     
     }

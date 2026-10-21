@@ -20,8 +20,7 @@ return new class extends Migration
         // Relations
         $table->foreignId('company_id')
             ->constrained('companies')
-            ->onDelete('cascade');
-        //$table->integer('company_id');
+            ->onDelete('cascade');        
 
         // Basic Info
         $table->string('phone')->nullable();
@@ -29,12 +28,15 @@ return new class extends Migration
         // New fields you required
         $table->string('status')->default('active');         // active, inactive, terminated
         $table->string('nature_of_employment')->nullable();             // permanent / contract / part-time
-        $table->string('department')->nullable();
-        $table->string('unit')->nullable();
+        $table->string('department_id')->nullable();
+        $table->string('unit_id')->nullable();
         $table->date('date_of_joining')->nullable();
-        $table->string('division')->nullable();
-        $table->string('designation')->nullable();
+        $table->string('division_id')->nullable();
+        $table->string('designation_id')->nullable();
         $table->string('reporting_person')->nullable();
+        $table->string('email')->nullable();
+        $table->date('dob')->nullable();
+        $table->string('section_id')->nullable();
 
         $table->timestamps();
     });

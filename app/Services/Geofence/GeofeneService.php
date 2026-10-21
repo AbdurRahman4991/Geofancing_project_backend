@@ -14,7 +14,7 @@ class GeofeneService
     {
     }
 
-   
+
     public function index(Request $request)
     {
         if (!auth()->user()->can('market.view')) {
@@ -23,20 +23,16 @@ class GeofeneService
 
         $query = Geofence::with([
             'company:id,company_name',
-            'area:id,name,territory_id',
             'hierarchyNode:id,name,hierarchy_level_id,parent_id',
         ]);
         $this->hierarchyAccessService->applyGeofenceAccess($query);
 
-        if ($request->filled('area_id')) {
-            $query->where('area_id', $request->integer('area_id'));
-        }
 
         if ($request->filled('search')) {
             $search = $request->string('search')->toString();
             $query->where(function ($q) use ($search) {
                 $q->where('firm_name', 'like', "%{$search}%")
-                    ->orWhereHas('area', function ($areaQuery) use ($search) {
+                    ->orWhereHas('hierarchyNode', function ($areaQuery) use ($search) {
                         $areaQuery->where('name', 'like', "%{$search}%");
                     });
             });
@@ -65,8 +61,7 @@ class GeofeneService
         $this->assertHierarchyNodeCompany($data['hierarchy_node_id'] ?? null, $companyId);
 
         $geofence = Geofence::create($request->only([
-            'company_id',
-            'area_id',
+            'company_id',            
             'hierarchy_node_id',
             'firm_name',
             'latitude',
@@ -114,8 +109,7 @@ class GeofeneService
         $this->assertHierarchyNodeCompany($nodeId, $companyId);
 
         $geofence->update($request->only([
-            'company_id',
-            'area_id',
+            'company_id',            
             'hierarchy_node_id',
             'firm_name',
             'latitude',

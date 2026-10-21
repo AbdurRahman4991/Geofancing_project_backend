@@ -17,14 +17,6 @@ use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\Department\DepartmentController;
-use App\Http\Controllers\Api\Hierarchy\CountryController;
-use App\Http\Controllers\Api\Hierarchy\RegionController;
-use App\Http\Controllers\Api\Hierarchy\ZoneController;
-use App\Http\Controllers\Api\Hierarchy\DivisionController;
-use App\Http\Controllers\Api\Hierarchy\DistrictController;
-use App\Http\Controllers\Api\Hierarchy\SubDistrictController;
-use App\Http\Controllers\Api\Hierarchy\TerritoryController;
-use App\Http\Controllers\Api\Hierarchy\AreaController;
 use App\Http\Controllers\Api\Hierarchy\EmployeeHierarchyAssignController;
 use App\Http\Controllers\Api\Hierarchy\HierarchyLevelController;
 use App\Http\Controllers\Api\Hierarchy\HierarchyNodeController;
@@ -64,8 +56,6 @@ Route::middleware('auth:sanctum', 'throttle:api-auth')->group(function () {
     Route::post('roles/{role}/assign-permission', [PermissionController::class, 'assignPermission']);
     Route::get('/locations/employees', [EmployeeLocationEmployeeController::class, 'employeesLocationEmployee']);    
     Route::apiResource('attendance-rules', AttendanceRuleController::class);
-
-    // Hierarchy //
     Route::apiResource('hierarchy-levels', HierarchyLevelController::class);
     Route::apiResource('hierarchy-nodes', HierarchyNodeController::class);
     Route::apiResource('employee-hierarchy-assignments', EmployeeHierarchyAssignController::class );

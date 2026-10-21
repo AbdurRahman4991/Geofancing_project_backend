@@ -12,18 +12,16 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('geofences', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('area_id')
-            ->nullable()
-            ->constrained('areas')
-            ->onDelete('cascade');
+            $table->id();            
             $table->foreignId('company_id')
             ->constrained('companies')
-            ->cascadeOnDelete();            
+            ->cascadeOnDelete();
+            $table->foreignId('hierarchy_node_id')->nullable()->constrained('hierarchy_nodes')->nullOnDelete();
             $table->string('firm_name');
             $table->decimal('latitude', 10, 7);
             $table->decimal('longitude', 10, 7);
-            $table->integer('radius')->default(100); 
+            $table->integer('radius')->default(100);
+            $table->index(['company_id', 'hierarchy_node_id']);
             $table->timestamps();
         });
     }

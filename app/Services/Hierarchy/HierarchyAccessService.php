@@ -21,420 +21,105 @@ class HierarchyAccessService
             ->first();
     }
 
-    /**
-     * Get current user's assigned hierarchy level.
-     *
-     * Priority:
-     * area
-     * territory
-     * sub_district
-     * district
-     * division
-     * zone
-     * region
-     * country
-     */
-    public function getAssignedLevel(
-        ?EmployeeHierarchyAssignment $assignment = null
-    ): ?string {
+    /** Get current user's assigned hierarchy level. */
+    public function getAssignedLevel(?EmployeeHierarchyAssignment $assignment = null): ?string
+    {
         $assignment ??= $this->currentAssignment();
-
-        if (!$assignment) {
+        if (!$assignment?->hierarchy_node_id) {
             return null;
         }
 
-        if ($assignment->hierarchy_node_id) {
-            $node = $assignment->hierarchyNode;
-            $name = $node?->level?->name;
-            return $node?->level?->code ?: ($name ? strtolower(str_replace(' ', '_', $name)) : 'node');
-        }
-
-        if (!empty($assignment->area_id)) {
-            return 'area';
-        }
-
-        if (!empty($assignment->territory_id)) {
-            return 'territory';
-        }
-
-        if (!empty($assignment->sub_district_id)) {
-            return 'sub_district';
-        }
-
-        if (!empty($assignment->district_id)) {
-            return 'district';
-        }
-
-        if (!empty($assignment->division_id)) {
-            return 'division';
-        }
-
-        if (!empty($assignment->zone_id)) {
-            return 'zone';
-        }
-
-        if (!empty($assignment->region_id)) {
-            return 'region';
-        }
-
-        if (!empty($assignment->country_id)) {
-            return 'country';
-        }
-
-        return null;
+        $node = $assignment->hierarchyNode;
+        $name = $node?->level?->name;
+        return $node?->level?->code ?: ($name ? strtolower(str_replace(' ', '_', $name)) : 'node');
     }
 
-    /**
-     * Get assigned hierarchy ID.
-     */
-    public function getAssignedId(
-        ?EmployeeHierarchyAssignment $assignment = null
-    ): ?int {
+    /** Get assigned hierarchy node ID. */
+    public function getAssignedId(?EmployeeHierarchyAssignment $assignment = null): ?int
+    {
         $assignment ??= $this->currentAssignment();
-
-        if (!$assignment) {
-            return null;
-        }
-
-        if ($assignment->hierarchy_node_id) {
-            return (int) $assignment->hierarchy_node_id;
-        }
-
-        $level = $this->getAssignedLevel($assignment);
-
-        if (!$level) {
-            return null;
-        }
-
-        return match ($level) {
-            'area'         => $assignment->area_id,
-            'territory'    => $assignment->territory_id,
-            'sub_district' => $assignment->sub_district_id,
-            'district'     => $assignment->district_id,
-            'division'     => $assignment->division_id,
-            'zone'         => $assignment->zone_id,
-            'region'       => $assignment->region_id,
-            'country'      => $assignment->country_id,
-            default        => null,
-        };
+        return $assignment?->hierarchy_node_id ? (int) $assignment->hierarchy_node_id : null;
     }
 
-    /**
-     * Restrict a User query to the authenticated user's hierarchy branch.
-     * Super admins and company admins are handled by the caller's company scope.
-     */
+    /** Restrict a User query to the authenticated user's hierarchy branch. */
     public function applyUserHierarchyAccess(Builder $query): Builder
     {
         $user = Auth::user();
-
         if (!$user || $user->hasRole('Super-Admin') || $user->hasAnyRole(['Company Admin', 'admin'])) {
             return $query;
         }
 
         $assignment = $this->currentAssignment();
-
-        if ($assignment?->hierarchy_node_id) {
-            $companyId = $assignment->hierarchyNode?->company_id;
-            if (!$companyId) {
-                return $query->whereRaw('1 = 0');
-            }
-
-            $nodeIds = $this->hierarchyNodeBranchIds((int) $companyId, (int) $assignment->hierarchy_node_id);
-            return $query->whereHas('hierarchyAssignment', fn (Builder $assignmentQuery) =>
-                $assignmentQuery->whereIn('hierarchy_node_id', $nodeIds)
-            );
-        }
-
-        $level = $this->getAssignedLevel($assignment);
-        $id = $this->getAssignedId($assignment);
-
-        if (!$assignment || !$level || !$id) {
+        if (!$assignment?->hierarchy_node_id) {
             return $query->whereRaw('1 = 0');
         }
 
-        $column = $level . '_id';
+        $companyId = $assignment->hierarchyNode?->company_id;
+        if (!$companyId) {
+            return $query->whereRaw('1 = 0');
+        }
 
-        return $query->whereHas('hierarchyAssignment', function (Builder $assignmentQuery) use ($column, $id) {
-            $assignmentQuery->where($column, $id);
-        });
+        $nodeIds = $this->hierarchyNodeBranchIds((int) $companyId, (int) $assignment->hierarchy_node_id);
+        return $query->whereHas('hierarchyAssignment', fn (Builder $assignmentQuery) =>
+            $assignmentQuery->whereIn('hierarchy_node_id', $nodeIds)
+        );
     }
 
-    /**
-     * Apply hierarchy access restriction to Geofence query.
-     *
-     * Market/Geofence belongs to Area.
-     *
-     * User can access markets under his assigned hierarchy.
-     */
-    public function applyGeofenceAccess(
-        Builder $query,
-        ?EmployeeHierarchyAssignment $assignment = null
-    ): Builder {
-        // Super Admin can access data across companies.
+    /** Apply hierarchy access restriction to Geofence query. */
+    public function applyGeofenceAccess(Builder $query, ?EmployeeHierarchyAssignment $assignment = null): Builder
+    {
         $user = Auth::user();
         if ($user?->hasRole('Super-Admin')) {
             return $query;
         }
 
-        // All other users are restricted to their own company.
         $companyId = $user?->company_id ?? $user?->employee?->company_id;
         if (!$companyId) {
             return $query->whereRaw('1 = 0');
         }
 
         $query->where('geofences.company_id', $companyId);
-
-        // Company Admins have company-wide access; other roles also need
-        // to pass the hierarchy restriction below.
         if ($user?->hasRole(['Company Admin', 'admin'])) {
             return $query;
         }
 
         $assignment ??= $this->currentAssignment();
-
-        if (!$assignment) {
-            // No active assignment = no access.
+        if (!$assignment?->hierarchy_node_id) {
             return $query->whereRaw('1 = 0');
         }
 
-        if ($assignment->hierarchy_node_id) {
-            $nodeIds = $this->hierarchyNodeBranchIds((int) $companyId, (int) $assignment->hierarchy_node_id);
-            return $query->whereIn('geofences.hierarchy_node_id', $nodeIds);
-        }
-
-        $level = $this->getAssignedLevel($assignment);
-
-        switch ($level) {
-
-            /**
-             * Area Manager
-             *
-             * User can see only his Area's markets.
-             */
-            case 'area':
-
-                $query->where(
-                    'area_id',
-                    $assignment->area_id
-                );
-
-                break;
-
-
-            /**
-             * Territory Manager
-             *
-             * User can see all Areas
-             * under his Territory.
-             */
-            case 'territory':
-
-                $query->whereHas('area', function ($q) use ($assignment) {
-
-                    $q->where(
-                        'territory_id',
-                        $assignment->territory_id
-                    );
-
-                });
-
-                break;
-
-
-            /**
-             * Sub District Manager
-             *
-             * Area
-             * → Territory
-             * → SubDistrict
-             */
-            case 'sub_district':
-
-                $query->whereHas(
-                    'area.territory',
-                    function ($q) use ($assignment) {
-
-                        $q->where(
-                            'sub_district_id',
-                            $assignment->sub_district_id
-                        );
-
-                    }
-                );
-
-                break;
-
-
-            /**
-             * District Manager
-             */
-            case 'district':
-
-                $query->whereHas(
-                    'area.territory.subDistrict',
-                    function ($q) use ($assignment) {
-
-                        $q->where(
-                            'district_id',
-                            $assignment->district_id
-                        );
-
-                    }
-                );
-
-                break;
-
-
-            /**
-             * Division Manager
-             */
-            case 'division':
-
-                $query->whereHas(
-                    'area.territory.subDistrict.district',
-                    function ($q) use ($assignment) {
-
-                        $q->where(
-                            'division_id',
-                            $assignment->division_id
-                        );
-
-                    }
-                );
-
-                break;
-
-
-            /**
-             * Zone Manager
-             */
-            case 'zone':
-
-                $query->whereHas(
-                    'area.territory.subDistrict.district.division',
-                    function ($q) use ($assignment) {
-
-                        $q->where(
-                            'zone_id',
-                            $assignment->zone_id
-                        );
-
-                    }
-                );
-
-                break;
-
-
-            /**
-             * Region Manager
-             */
-            case 'region':
-
-                $query->whereHas(
-                    'area.territory.subDistrict.district.division.zone',
-                    function ($q) use ($assignment) {
-
-                        $q->where(
-                            'region_id',
-                            $assignment->region_id
-                        );
-
-                    }
-                );
-
-                break;
-
-
-            /**
-             * Country Manager
-             */
-            case 'country':
-
-                $query->whereHas(
-                    'area.territory.subDistrict.district.division.zone.region',
-                    function ($q) use ($assignment) {
-
-                        $q->where(
-                            'country_id',
-                            $assignment->country_id
-                        );
-
-                    }
-                );
-
-                break;
-        }
-
-        return $query;
+        $nodeIds = $this->hierarchyNodeBranchIds((int) $companyId, (int) $assignment->hierarchy_node_id);
+        return $query->whereIn('geofences.hierarchy_node_id', $nodeIds);
     }
 
-    /**
-     * Check whether a specific Geofence is accessible
-     * by current logged-in user.
-     */
-    public function canAccessGeofence(
-        Geofence $geofence,
-        ?EmployeeHierarchyAssignment $assignment = null
-    ): bool {
-        $query = Geofence::query()
-            ->whereKey($geofence->id);
-
-        $this->applyGeofenceAccess(
-            $query,
-            $assignment
-        );
-
+    /** Check whether a specific Geofence is accessible. */
+    public function canAccessGeofence(Geofence $geofence, ?EmployeeHierarchyAssignment $assignment = null): bool
+    {
+        $query = Geofence::query()->whereKey($geofence->id);
+        $this->applyGeofenceAccess($query, $assignment);
         return $query->exists();
     }
 
-    /**
-     * Check whether current user can access a specific Area.
-     */
-    public function canAccessArea(
-        int $areaId,
-        ?EmployeeHierarchyAssignment $assignment = null
-    ): bool {
-        $query = Geofence::query()
-            ->where('area_id', $areaId);
-
-        $this->applyGeofenceAccess(
-            $query,
-            $assignment
-        );
-
+    /** Check whether current user can access a specific Area. */
+    public function canAccessArea(int $areaId, ?EmployeeHierarchyAssignment $assignment = null): bool
+    {
+        $query = Geofence::query()->where('area_id', $areaId);
+        $this->applyGeofenceAccess($query, $assignment);
         return $query->exists();
     }
 
-    /**
-     * Get all accessible Geofences for current user.
-     */
-    public function accessibleGeofences(
-        ?EmployeeHierarchyAssignment $assignment = null
-    ): Builder {
-        $assignment ??= $this->currentAssignment();
-
-        $query = Geofence::query();
-
-        return $this->applyGeofenceAccess(
-            $query,
-            $assignment
-        );
+    /** Get all accessible Geofences for current user. */
+    public function accessibleGeofences(?EmployeeHierarchyAssignment $assignment = null): Builder
+    {
+        return $this->applyGeofenceAccess(Geofence::query(), $assignment);
     }
 
-    /**
-     * Get current user's hierarchy information.
-     */
+    /** Get current user's hierarchy information. */
     public function getAccessInfo(): array
     {
         $assignment = $this->currentAssignment();
-
         if (!$assignment) {
-            return [
-                'has_access' => false,
-                'level' => null,
-                'id' => null,
-                'assignment' => null,
-            ];
+            return ['has_access' => false, 'level' => null, 'id' => null, 'assignment' => null];
         }
 
         return [
@@ -450,17 +135,13 @@ class HierarchyAccessService
     {
         $nodeIds = [$nodeId];
         $frontier = $nodeIds;
-
         while ($frontier) {
             $children = HierarchyNode::forCompany($companyId)
                 ->whereIn('parent_id', $frontier)
-                ->pluck('id')
-                ->map(fn ($id) => (int) $id)
-                ->all();
+                ->pluck('id')->map(fn ($id) => (int) $id)->all();
             $frontier = array_values(array_diff($children, $nodeIds));
             $nodeIds = array_merge($nodeIds, $frontier);
         }
-
         return $nodeIds;
     }
 }

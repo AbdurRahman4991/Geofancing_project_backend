@@ -27,6 +27,7 @@ return new class extends Migration
             $table->string('password')->nullable();
             $table->decimal('latitude', 10, 7)->nullable();
             $table->decimal('longitude', 10, 7)->nullable();
+            $table->unsignedInteger('target')->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active');           
 
             $table->rememberToken();
