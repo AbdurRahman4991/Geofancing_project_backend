@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\EmployeeLocation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use App\Traits\ScopesCompanyAccess;
 use App\Services\Employee\EmployeeLocationService;
 use App\Services\Hierarchy\HierarchyAccessService;
@@ -95,6 +96,8 @@ class EmployeeLocationController extends Controller
             'activity_type' => 'nullable|string|max:255',
             'transport_mode' => 'nullable|string|max:255',
             'speed' => 'nullable|numeric|min:0',
+            'accuracy' => 'nullable|numeric|min:0|max:10000',
+            'recorded_at' => 'nullable|date',
         ]);
 
         $location = $this->service->createForUser(auth()->user(), $validated);
@@ -102,6 +105,35 @@ class EmployeeLocationController extends Controller
         return response()->json([
             'message' => 'Location saved successfully',
             'data' => $location
+        ], 201);
+    }
+
+    /** Store a filtered GPS batch uploaded by the mobile app. */
+    public function batch(Request $request)
+    {
+        if (!auth()->user()->can('employee-location.create')) {
+            abort(403, 'You do not have permission to employee location create.');
+        }
+
+        $validated = $request->validate([
+            'locations' => 'required|array|min:1|max:500',
+            'locations.*.latitude' => 'required|numeric|between:-90,90',
+            'locations.*.longitude' => 'required|numeric|between:-180,180',
+            'locations.*.accuracy' => 'nullable|numeric|min:0|max:10000',
+            'locations.*.recorded_at' => 'required|date',
+            'locations.*.activity_type' => 'nullable|string|max:255',
+            'locations.*.transport_mode' => 'nullable|string|max:255',
+            'locations.*.speed' => 'nullable|numeric|min:0',
+        ]);
+
+        $saved = DB::transaction(function () use ($validated) {
+            return collect($validated['locations'])->sortBy('recorded_at')->map(
+                fn (array $point) => $this->service->createForUser(auth()->user(), $point)
+            )->values();
+        });
+        return response()->json([
+            'message' => 'Location batch saved successfully.',
+            'data' => ['saved' => $saved->count(), 'locations' => $saved],
         ], 201);
     }
 
@@ -188,13 +220,13 @@ class EmployeeLocationController extends Controller
 
         $query->where('user_id', $request->input('user_id', auth()->id()));
         $locations = $query
-            ->whereDate('created_at', $date)
-            ->orderBy('created_at', 'asc')
+            ->whereDate('recorded_at', $date)
+            ->orderBy('recorded_at', 'asc')
             ->get([
                 'id',
                 'latitude',
                 'longitude',
-                'created_at',
+                'recorded_at',
             ]);
 
         return response()->json([
@@ -210,4 +242,56 @@ class EmployeeLocationController extends Controller
             $this->hierarchyAccessService->applyUserHierarchyAccess($userQuery);
         });
     }
+
+    /** Return map-ready polylines, splitting when no GPS point arrives for a while. */
+    public function segments(Request $request)
+    {
+        if (!auth()->user()->can('employee-location.view')) {
+            abort(403, 'You do not have permission to employee location view.');
+        }
+
+        $validated = $request->validate([
+            'user_id' => 'nullable|exists:users,id',
+            'date' => 'nullable|date',
+            'gap_minutes' => 'nullable|integer|min:1|max:1440',
+        ]);
+        $date = $validated['date'] ?? today()->toDateString();
+        $query = EmployeeLocation::with('user:id,name,employee_id,company_id');
+        $this->scopeToCurrentCompany($query);
+        $this->applyHierarchyScope($query);
+
+        $points = $query->where('user_id', $validated['user_id'] ?? auth()->id())
+            ->whereDate('recorded_at', $date)
+            ->orderBy('recorded_at')
+            ->get(['id', 'user_id', 'latitude', 'longitude', 'accuracy', 'speed', 'recorded_at']);
+
+        $gapSeconds = ($validated['gap_minutes'] ?? 10) * 60;
+        $segments = [];
+        foreach ($points as $point) {
+            $lastIndex = array_key_last($segments);
+            $lastPoint = $lastIndex === null ? null : end($segments[$lastIndex]['points']);
+            if ($lastPoint && $point->recorded_at->diffInSeconds($lastPoint['recorded_at']) > $gapSeconds) {
+                $lastPoint = null;
+            }
+            if (!$lastPoint) {
+                $segments[] = ['points' => []];
+                $lastIndex = array_key_last($segments);
+            }
+            $segments[$lastIndex]['points'][] = [
+                'latitude' => (float) $point->latitude,
+                'longitude' => (float) $point->longitude,
+                'accuracy' => $point->accuracy,
+                'speed' => $point->speed,
+                'recorded_at' => $point->recorded_at,
+            ];
+        }
+
+        return response()->json([
+            'status' => true,
+            'date' => $date,
+            'user' => $points->first()?->user,
+            'segments' => array_values(array_filter($segments, fn ($segment) => count($segment['points']) > 1)),
+        ]);
+    }
 }
+

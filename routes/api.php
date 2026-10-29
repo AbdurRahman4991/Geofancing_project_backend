@@ -42,6 +42,8 @@ Route::middleware('auth:sanctum', 'throttle:api-auth')->group(function () {
     Route::post('/check-out', [AttendanceController::class, 'checkOut']);
     Route::get('/attendance/history', [AttendanceController::class, 'history']);
     Route::apiResource('companies', CompanyController::class);
+    Route::post('/employee-locations/batch', [EmployeeLocationController::class, 'batch']);
+    Route::get('/employee-locations/segments', [EmployeeLocationController::class, 'segments']);
     Route::apiResource('employee-locations', EmployeeLocationController::class);
     Route::post('/locations/history', [EmployeeLocationController::class, 'history']);
     Route::apiResource('geofences', GeofenceController::class);    

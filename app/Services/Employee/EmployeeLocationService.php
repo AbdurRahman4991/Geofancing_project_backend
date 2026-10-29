@@ -40,6 +40,8 @@ class EmployeeLocationService
             'activity_type' => $data['activity_type'] ?? null,
             'transport_mode' => $data['transport_mode'] ?? null,
             'speed' => $data['speed'] ?? null,
+            'accuracy' => $data['accuracy'] ?? null,
+            'recorded_at' => $data['recorded_at'] ?? now(),
         ]);
     }
 }

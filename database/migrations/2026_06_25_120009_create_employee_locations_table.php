@@ -17,9 +17,12 @@ return new class extends Migration
             $table->integer('company_id')->nullable();
             $table->decimal('latitude', 10, 8);
             $table->decimal('longitude', 11, 8);
+            $table->decimal('accuracy', 8, 2)->nullable()->after('longitude');
+            $table->timestamp('recorded_at')->nullable()->index()->after('accuracy');              
             $table->string('activity_type')
                 ->nullable()
                 ->after('longitude');
+              
 
             $table->string('transport_mode')
                 ->nullable()

@@ -14,6 +14,16 @@ class EmployeeLocation extends Model
         'activity_type',
         'transport_mode',
         'speed',
+        'accuracy',
+        'recorded_at',
+    ];
+
+    protected $casts = [
+        'latitude' => 'float',
+        'longitude' => 'float',
+        'speed' => 'float',
+        'accuracy' => 'float',
+        'recorded_at' => 'datetime',
     ];
 
     public function user()
