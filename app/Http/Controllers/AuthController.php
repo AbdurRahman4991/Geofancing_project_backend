@@ -106,7 +106,7 @@ class AuthController extends Controller
             'password',
         ])
         ->with([
-            'employee:id,name,employee_id,company_id,designation',
+            'employee:id,name,employee_id,company_id,designation_id',
             'hierarchyAssignment:id,user_id,hierarchy_node_id'
         ])
         ->where('email', $request->email)
@@ -181,11 +181,9 @@ class AuthController extends Controller
         $user = Auth::user();
         $companyId = $user->company_id ?? $user->employee?->company_id;
         $roleNames = $user->getRoleNames()->values();
-
-        // আগের token delete করতে চাইলে
+        
         $user->tokens()->delete();
-
-        // নতুন token তৈরি
+        
         $token = $user->createToken('admin-token')->plainTextToken;
 
         return response()->json([

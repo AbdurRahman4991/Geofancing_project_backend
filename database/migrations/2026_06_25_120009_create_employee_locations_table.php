@@ -21,9 +21,7 @@ return new class extends Migration
             $table->timestamp('recorded_at')->nullable()->index()->after('accuracy');              
             $table->string('activity_type')
                 ->nullable()
-                ->after('longitude');
-              
-
+                ->after('longitude');            
             $table->string('transport_mode')
                 ->nullable()
                 ->after('activity_type');

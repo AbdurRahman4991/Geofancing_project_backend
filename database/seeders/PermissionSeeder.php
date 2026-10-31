@@ -30,6 +30,26 @@ class PermissionSeeder extends Seeder
             'department.edit',
             'department.delete',
 
+            'unit.view',
+            'unit.create',
+            'unit.edit',
+            'unit.delete',
+
+            'product.view',
+            'product.create',
+            'product.edit',
+            'product.delete',
+
+            'product-stock.view',
+            'product-stock.create',
+            'product-stock.edit',
+            'product-stock.delete',
+
+            'product-price.view',
+            'product-price.create',
+            'product-price.edit',
+            'product-price.delete',
+
             'country.view',
             'country.create',
             'country.edit',

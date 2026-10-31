@@ -61,11 +61,11 @@ class SuperAdminSeeder extends Seeder
                 'phone' => '01814874980',
                 'status' => 'active',
                 'nature_of_employment' => 'permanent',
-                'department' => 'Management',
-                'unit' => 'Head Office',
+                'department_id' => 'Management',
+                'unit_id' => 'Head Office',
                 'date_of_joining' => now()->format('Y-m-d'),
-                'division' => 'Dhaka',
-                'designation' => 'Super Admin',
+                'division_id' => 'Dhaka',
+                'designation_id' => 'Super Admin',
                 'reporting_person' => null,
             ]
         );

@@ -1,5 +1,4 @@
 <?php
-
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
@@ -17,10 +16,15 @@ use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\Department\DepartmentController;
+use App\Http\Controllers\Api\Category\CategoryController;
+use App\Http\Controllers\Api\Brand\BrandController;
+use App\Http\Controllers\Api\Product\UnitController;
+use App\Http\Controllers\Api\Product\ProductController;
+use App\Http\Controllers\Api\Product\ProductStockController;
+use App\Http\Controllers\Api\Product\ProductPriceController;
 use App\Http\Controllers\Api\Hierarchy\EmployeeHierarchyAssignController;
 use App\Http\Controllers\Api\Hierarchy\HierarchyLevelController;
 use App\Http\Controllers\Api\Hierarchy\HierarchyNodeController;
-
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -49,6 +53,12 @@ Route::middleware('auth:sanctum', 'throttle:api-auth')->group(function () {
     Route::apiResource('geofences', GeofenceController::class);    
     Route::apiResource('employees', EmployeeController::class);
     Route::apiResource('departments', DepartmentController::class);
+    Route::apiResource('categories', CategoryController::class);
+    Route::apiResource('brands', BrandController::class);
+    Route::apiResource('units', UnitController::class);
+    Route::apiResource('products', ProductController::class);
+    Route::apiResource('product-stocks', ProductStockController::class);
+    Route::apiResource('product-prices', ProductPriceController::class);
     Route::post('employees/sync', [EmployeeController::class, 'syncEmployees']);   
     Route::apiResource('permissions', PermissionController::class);
     Route::get('permission-groups', [PermissionController::class, 'grouped']);  
@@ -64,4 +74,3 @@ Route::middleware('auth:sanctum', 'throttle:api-auth')->group(function () {
     Route::get('roles/{roleId}/permissions',[RoleController::class, 'getRolePermissions']);
           
 });
- 
