@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\Department\DepartmentController;
 use App\Http\Controllers\Api\Category\CategoryController;
+use App\Http\Controllers\Api\Category\SubCategoryController;
 use App\Http\Controllers\Api\Brand\BrandController;
 use App\Http\Controllers\Api\Product\UnitController;
 use App\Http\Controllers\Api\Product\ProductController;
@@ -54,6 +55,7 @@ Route::middleware('auth:sanctum', 'throttle:api-auth')->group(function () {
     Route::apiResource('employees', EmployeeController::class);
     Route::apiResource('departments', DepartmentController::class);
     Route::apiResource('categories', CategoryController::class);
+    Route::apiResource('sub-categories', SubCategoryController::class);
     Route::apiResource('brands', BrandController::class);
     Route::apiResource('units', UnitController::class);
     Route::apiResource('products', ProductController::class);

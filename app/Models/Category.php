@@ -8,20 +8,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Category extends Model
 {
-    protected $fillable = ['company_id', 'parent_id', 'name', 'description', 'status'];
+    protected $fillable = ['company_id', 'name', 'description', 'status'];
 
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);
     }
 
-    public function parent(): BelongsTo
-    {
-        return $this->belongsTo(self::class, 'parent_id');
-    }
-
     public function subcategories(): HasMany
     {
-        return $this->hasMany(self::class, 'parent_id');
+        return $this->hasMany(SubCategory::class);
     }
 }

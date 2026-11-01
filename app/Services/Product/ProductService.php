@@ -18,14 +18,14 @@ class ProductService
     public function index(Request $request)
     {
         $query = $this->companyQuery($this->companyId($request))
-            ->with(['category:id,name,parent_id', 'brand:id,name', 'unit:id,unit_name,short_name']);
+            ->with(['category:id,name', 'subCategory:id,category_id,name', 'brand:id,name', 'unit:id,unit_name,short_name']);
 
         if ($request->filled('search')) {
             $search = $request->string('search')->trim()->toString();
             $query->where('product_name', 'like', "%{$search}%");
         }
 
-        foreach (['category_id', 'brand_id', 'unit_id', 'status'] as $filter) {
+        foreach (['category_id', 'sub_category_id', 'brand_id', 'unit_id', 'status'] as $filter) {
             if ($request->filled($filter)) {
                 $query->where($filter, $request->input($filter));
             }
@@ -43,13 +43,13 @@ class ProductService
         $this->assertReferencesBelongToCompany($companyId, $data);
 
         return Product::create($data + ['company_id' => $companyId])
-            ->load(['category:id,name,parent_id', 'brand:id,name', 'unit:id,unit_name,short_name']);
+            ->load(['category:id,name', 'subCategory:id,category_id,name', 'brand:id,name', 'unit:id,unit_name,short_name']);
     }
 
     public function show(Request $request, int $id): Product
     {
         return $this->companyQuery($this->companyId($request))
-            ->with(['category:id,name,parent_id', 'brand:id,name', 'unit:id,unit_name,short_name'])
+            ->with(['category:id,name', 'subCategory:id,category_id,name', 'brand:id,name', 'unit:id,unit_name,short_name'])
             ->findOrFail($id);
     }
 
@@ -60,12 +60,13 @@ class ProductService
         $data = $this->validatedData($request, true);
         $this->assertReferencesBelongToCompany($companyId, [
             'category_id' => $data['category_id'] ?? $product->category_id,
+            'sub_category_id' => $data['sub_category_id'] ?? $product->sub_category_id,
             'brand_id' => $data['brand_id'] ?? $product->brand_id,
             'unit_id' => $data['unit_id'] ?? $product->unit_id,
         ]);
         $product->update($data);
 
-        return $product->refresh()->load(['category:id,name,parent_id', 'brand:id,name', 'unit:id,unit_name,short_name']);
+        return $product->refresh()->load(['category:id,name', 'subCategory:id,category_id,name', 'brand:id,name', 'unit:id,unit_name,short_name']);
     }
 
     public function destroy(Request $request, int $id): void
@@ -78,6 +79,7 @@ class ProductService
         return $request->validate([
             'product_name' => [$updating ? 'sometimes' : 'required', 'string', 'max:255'],
             'category_id' => [$updating ? 'sometimes' : 'required', 'integer', 'exists:categories,id'],
+            'sub_category_id' => ['sometimes', 'nullable', 'integer', 'exists:sub_categories,id'],
             'brand_id' => [$updating ? 'sometimes' : 'required', 'integer', 'exists:brands,id'],
             'unit_id' => [$updating ? 'sometimes' : 'required', 'integer', 'exists:units,id'],
             'description' => ['sometimes', 'nullable', 'string', 'max:5000'],
@@ -98,6 +100,13 @@ class ProductService
                 throw ValidationException::withMessages([
                     $field => "The selected {$label} does not belong to this company.",
                 ]);
+            }
+        }
+
+        if (!empty($data['sub_category_id'])) {
+            $subCategory = \App\Models\SubCategory::query()->where('company_id', $companyId)->whereKey($data['sub_category_id'])->first();
+            if (!$subCategory || (int) $subCategory->category_id !== (int) $data['category_id']) {
+                throw ValidationException::withMessages(['sub_category_id' => 'The selected subcategory must belong to the selected category and company.']);
             }
         }
     }

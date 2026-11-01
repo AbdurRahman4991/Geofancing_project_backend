@@ -40,6 +40,16 @@ class PermissionSeeder extends Seeder
             'product.edit',
             'product.delete',
 
+            'category.view',
+            'category.create',
+            'category.edit',
+            'category.delete',
+
+            'sub-category.view',
+            'sub-category.create',
+            'sub-category.edit',
+            'sub-category.delete',
+
             'product-stock.view',
             'product-stock.create',
             'product-stock.edit',

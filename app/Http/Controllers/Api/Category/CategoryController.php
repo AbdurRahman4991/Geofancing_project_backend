@@ -19,7 +19,7 @@ class CategoryController extends Controller
 
         return response()->json([
             'status' => 200,
-            'data' => $this->service->paginate($this->companyId($request), $request->only('parent_id', 'status', 'search', 'per_page')),
+            'data' => $this->service->paginate($this->companyId($request), $request->only('status', 'search', 'per_page')),
         ]);
     }
 
@@ -27,7 +27,6 @@ class CategoryController extends Controller
     {
         $this->authorizeAction('create');
         $data = $request->validate([
-            'parent_id' => ['sometimes', 'nullable', 'integer', 'exists:categories,id'],
             'name' => ['required', 'string', 'max:255'],
             'description' => ['sometimes', 'nullable', 'string', 'max:5000'],
             'status' => ['sometimes', 'in:active,inactive'],
@@ -51,7 +50,6 @@ class CategoryController extends Controller
     {
         $this->authorizeAction('edit');
         $data = $request->validate([
-            'parent_id' => ['sometimes', 'nullable', 'integer', 'exists:categories,id'],
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'description' => ['sometimes', 'nullable', 'string', 'max:5000'],
             'status' => ['sometimes', 'in:active,inactive'],
