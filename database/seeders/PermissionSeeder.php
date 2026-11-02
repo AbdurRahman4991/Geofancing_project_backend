@@ -60,6 +60,11 @@ class PermissionSeeder extends Seeder
             'product-price.edit',
             'product-price.delete',
 
+            'order.view',
+            'order.create',
+            'order.edit',
+            'order.delete',
+
             'country.view',
             'country.create',
             'country.edit',

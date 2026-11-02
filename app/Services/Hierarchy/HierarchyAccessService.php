@@ -101,12 +101,12 @@ class HierarchyAccessService
     }
 
     /** Check whether current user can access a specific Area. */
-    public function canAccessArea(int $areaId, ?EmployeeHierarchyAssignment $assignment = null): bool
-    {
-        $query = Geofence::query()->where('area_id', $areaId);
-        $this->applyGeofenceAccess($query, $assignment);
-        return $query->exists();
-    }
+    // public function canAccessArea(int $areaId, ?EmployeeHierarchyAssignment $assignment = null): bool
+    // {
+    //     $query = Geofence::query()->where('area_id', $areaId);
+    //     $this->applyGeofenceAccess($query, $assignment);
+    //     return $query->exists();
+    // }
 
     /** Get all accessible Geofences for current user. */
     public function accessibleGeofences(?EmployeeHierarchyAssignment $assignment = null): Builder

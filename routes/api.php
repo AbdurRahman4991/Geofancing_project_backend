@@ -26,6 +26,7 @@ use App\Http\Controllers\Api\Product\ProductPriceController;
 use App\Http\Controllers\Api\Hierarchy\EmployeeHierarchyAssignController;
 use App\Http\Controllers\Api\Hierarchy\HierarchyLevelController;
 use App\Http\Controllers\Api\Hierarchy\HierarchyNodeController;
+use App\Http\Controllers\Api\Order\OrderController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -61,6 +62,7 @@ Route::middleware('auth:sanctum', 'throttle:api-auth')->group(function () {
     Route::apiResource('products', ProductController::class);
     Route::apiResource('product-stocks', ProductStockController::class);
     Route::apiResource('product-prices', ProductPriceController::class);
+    Route::apiResource('orders', OrderController::class);
     Route::post('employees/sync', [EmployeeController::class, 'syncEmployees']);   
     Route::apiResource('permissions', PermissionController::class);
     Route::get('permission-groups', [PermissionController::class, 'grouped']);  
