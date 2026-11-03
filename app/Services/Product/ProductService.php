@@ -17,6 +17,7 @@ class ProductService
 
     public function index(Request $request)
     {
+        
         $query = $this->companyQuery($this->companyId($request))
             ->with(['category:id,name', 'subCategory:id,category_id,name', 'brand:id,name', 'unit:id,unit_name,short_name']);
 

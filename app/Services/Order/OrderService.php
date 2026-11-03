@@ -4,6 +4,7 @@ namespace App\Services\Order;
 
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\ProductPrice;
 use App\Services\Hierarchy\HierarchyAccessService;
 use App\Traits\ScopesCompanyAccess;
 use Illuminate\Database\Eloquent\Builder;
@@ -54,7 +55,7 @@ class OrderService
                 'notes' => $data['notes'] ?? null,
                 'total' => 0,
             ]);
-            $this->replaceItems($order, $data['items']);
+            $this->replaceItems($order, $data['items'], $companyId);
 
             return $order->load(['geofence:id,firm_name,address', 'items.product:id,product_name']);
         });
@@ -78,10 +79,10 @@ class OrderService
             $this->assertProductsBelongToCompany($companyId, $data['items']);
         }
 
-        return DB::transaction(function () use ($order, $data) {
+        return DB::transaction(function () use ($order, $data, $companyId) {
             $order->update(collect($data)->except('items')->all());
             if (isset($data['items'])) {
-                $this->replaceItems($order, $data['items']);
+                $this->replaceItems($order, $data['items'], $companyId);
             }
 
             return $order->refresh()->load(['geofence:id,firm_name,address', 'items.product:id,product_name']);
@@ -104,19 +105,43 @@ class OrderService
             'items' => [$updating ? 'sometimes' : 'required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'integer', 'distinct', 'exists:products,id'],
             'items.*.quantity' => ['required', 'numeric', 'gt:0'],
-            'items.*.unit_price' => ['required', 'numeric', 'min:0'],
         ];
 
         return $request->validate($rules);
     }
 
-    private function replaceItems(Order $order, array $items): void
+    private function replaceItems(Order $order, array $items, int $companyId): void
     {
         $order->items()->delete();
         $total = 0;
-        foreach ($items as $item) {
-            $lineTotal = round((float) $item['quantity'] * (float) $item['unit_price'], 2);
-            $order->items()->create($item + ['line_total' => $lineTotal]);
+        $orderDate = now()->toDateString();
+
+        foreach ($items as $index => $item) {
+            $price = ProductPrice::query()
+                ->where('company_id', $companyId)
+                ->where('product_id', $item['product_id'])
+                ->whereDate('effective_from', '<=', $orderDate)
+                ->where(fn (Builder $query) => $query->whereNull('effective_to')
+                    ->orWhereDate('effective_to', '>=', $orderDate))
+                ->orderByDesc('effective_from')
+                ->orderByDesc('id')
+                ->lockForUpdate()
+                ->first();
+
+            if (!$price) {
+                throw ValidationException::withMessages([
+                    "items.{$index}.product_id" => 'No active sale price is configured for this product.',
+                ]);
+            }
+
+            $unitPrice = (float) $price->sale_price;
+            $lineTotal = round((float) $item['quantity'] * $unitPrice, 2);
+            $order->items()->create([
+                'product_id' => $item['product_id'],
+                'quantity' => $item['quantity'],
+                'unit_price' => $unitPrice,
+                'line_total' => $lineTotal,
+            ]);
             $total += $lineTotal;
         }
         $order->update(['total' => round($total, 2)]);

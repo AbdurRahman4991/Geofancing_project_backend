@@ -27,7 +27,7 @@ class UserService
         ]);
 
         $query = User::query()
-            ->with('employee:id,name,employee_id,company_id,designation')
+            ->with('employee:id,name,employee_id,company_id,designation_id')
             ->select('id', 'name', 'email', 'phone', 'employee_id', 'company_id', 'status', 'created_at');
 
         $this->scopeToCurrentCompany($query, 'employee');
@@ -63,7 +63,7 @@ class UserService
     {
         $this->authorizePermission('user.edit');
 
-        $query = User::with('employee:id,name,employee_id,company_id,designation');
+        $query = User::with('employee:id,name,employee_id,company_id,designation_id');
         $this->scopeToCurrentCompany($query, 'employee');
         $this->hierarchyAccessService->applyUserHierarchyAccess($query);
 
@@ -90,7 +90,7 @@ class UserService
 
         $user->update($data);
 
-        return $user->load('employee:id,name,employee_id,company_id,designation');
+        return $user->load('employee:id,name,employee_id,company_id,designation_id');
     }
 
     private function authorizePermission(string $permission): void
