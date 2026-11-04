@@ -60,6 +60,7 @@ Route::middleware('auth:sanctum', 'throttle:api-auth')->group(function () {
     Route::apiResource('brands', BrandController::class);
     Route::apiResource('units', UnitController::class);
     Route::apiResource('products', ProductController::class);
+    Route::get('catalog', [ProductController::class, 'catalog']);
     Route::apiResource('product-stocks', ProductStockController::class);
     Route::apiResource('product-prices', ProductPriceController::class);
     Route::apiResource('orders', OrderController::class);

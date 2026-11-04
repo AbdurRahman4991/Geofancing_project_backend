@@ -32,6 +32,17 @@ class ProductController extends Controller
         ], 201);
     }
 
+    public function catalog(Request $request)
+    {
+        $this->authorizeAction('catalog-view');
+
+        return response()->json([
+            'message' => 'Product catalog retrieved successfully',
+            'data' => $this->productService->catalog($request),
+        ]);
+    }
+
+
     public function show(Request $request, int $id)
     {
         $this->authorizeAction('view');

@@ -47,6 +47,39 @@ class ProductService
             ->load(['category:id,name', 'subCategory:id,category_id,name', 'brand:id,name', 'unit:id,unit_name,short_name']);
     }
 
+    public function catalog(Request $request)
+    {
+        $query = $this->companyQuery($this->companyId($request))
+            ->with([
+                'prices' => fn ($priceQuery) => $priceQuery
+                    ->whereDate('effective_from', '<=', now()->toDateString())
+                    ->where(fn ($query) => $query->whereNull('effective_to')->orWhereDate('effective_to', '>=', now()->toDateString()))
+                    ->orderByDesc('effective_from')
+                    ->orderByDesc('id'),
+                'stock',
+            ]);
+
+        foreach (['category_id', 'sub_category_id', 'brand_id'] as $filter) {
+            if ($request->filled($filter)) {
+                $query->where($filter, $request->input($filter));
+            }
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->string('search')->trim()->toString();
+            $query->where('product_name', 'like', "%{$search}%");
+        }
+
+        return $query->orderBy('product_name')
+            ->paginate(min(max($request->integer('per_page', 10), 1), 100))
+            ->through(fn (Product $product) => [
+                'product_name' => $product->product_name,
+                'price' => $product->prices->first()?->sale_price,
+                'stock' => $product->stock?->quantity,
+            ])
+            ->withQueryString();
+    }    
+
     public function show(Request $request, int $id): Product
     {
         return $this->companyQuery($this->companyId($request))
