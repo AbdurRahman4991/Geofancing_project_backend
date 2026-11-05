@@ -29,8 +29,10 @@ class GeofenceController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'company_id' => 'required|integer',            
+            'company_id' => 'required|integer|exists:companies,id',
+            'hierarchy_node_id' => 'nullable|integer|exists:hierarchy_nodes,id',
             'firm_name' => 'required|string',
+            'address' => 'nullable|string',
             'latitude' => 'required|numeric',
             'longitude' => 'required|numeric',
             'radius' => 'required|integer|min:1',
@@ -49,8 +51,10 @@ class GeofenceController extends Controller
     public function update(Request $request, $id)
     {
         $request->validate([
-            'company_id' => 'sometimes|integer|max:255',            
-            'firm_name' => 'required|string',
+            'company_id' => 'sometimes|integer|exists:companies,id',
+            'hierarchy_node_id' => 'sometimes|nullable|integer|exists:hierarchy_nodes,id',
+            'firm_name' => 'sometimes|required|string',
+            'address' => 'sometimes|nullable|string',
             'latitude' => 'sometimes|numeric',
             'longitude' => 'sometimes|numeric',
             'radius' => 'sometimes|integer|min:1',
