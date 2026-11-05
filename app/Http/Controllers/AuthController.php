@@ -107,7 +107,7 @@ class AuthController extends Controller
         ])
         ->with([
             'employee:id,name,employee_id,company_id,designation_id',
-            'hierarchyAssignment:id,user_id,hierarchy_node_id'
+            'hierarchyAssignments:id,user_id,hierarchy_node_id'
         ])
         ->where('email', $request->email)
         ->first();
@@ -125,10 +125,10 @@ class AuthController extends Controller
             ], 403);
         }
 
-        $hierarchyNodeId = $user->hierarchyAssignment?->hierarchy_node_id;
+        $hierarchyNodeIds = $user->hierarchyAssignments->pluck('hierarchy_node_id')->filter()->unique();
         $userGeoFancing = collect();
-        if ($hierarchyNodeId) {
-            $userGeoFancing = Geofence::where('hierarchy_node_id', $hierarchyNodeId)
+        if ($hierarchyNodeIds->isNotEmpty()) {
+            $userGeoFancing = Geofence::whereIn('hierarchy_node_id', $hierarchyNodeIds)
                 ->select(
                     'latitude',
                     'longitude',

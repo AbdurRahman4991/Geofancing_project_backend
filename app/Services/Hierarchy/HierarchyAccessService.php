@@ -21,6 +21,17 @@ class HierarchyAccessService
             ->first();
     }
 
+    /** Get every current hierarchy assignment for the authenticated user. */
+    public function currentAssignments()
+    {
+        return EmployeeHierarchyAssignment::query()
+            ->where('user_id', Auth::id())
+            ->where('is_current', true)
+            ->whereNotNull('hierarchy_node_id')
+            ->with('hierarchyNode')
+            ->get();
+    }
+
     /** Get current user's assigned hierarchy level. */
     public function getAssignedLevel(?EmployeeHierarchyAssignment $assignment = null): ?string
     {
@@ -49,18 +60,18 @@ class HierarchyAccessService
             return $query;
         }
 
-        $assignment = $this->currentAssignment();
-        if (!$assignment?->hierarchy_node_id) {
+        $assignments = $this->currentAssignments();
+        if ($assignments->isEmpty()) {
             return $query->whereRaw('1 = 0');
         }
 
-        $companyId = $assignment->hierarchyNode?->company_id;
-        if (!$companyId) {
-            return $query->whereRaw('1 = 0');
-        }
-
-        $nodeIds = $this->hierarchyNodeBranchIds((int) $companyId, (int) $assignment->hierarchy_node_id);
-        return $query->whereHas('hierarchyAssignment', fn (Builder $assignmentQuery) =>
+        $nodeIds = $assignments->flatMap(function ($assignment) {
+            $companyId = $assignment->hierarchyNode?->company_id;
+            return $companyId
+                ? $this->hierarchyNodeBranchIds((int) $companyId, (int) $assignment->hierarchy_node_id)
+                : [];
+        })->unique()->all();
+        return $query->whereHas('hierarchyAssignments', fn (Builder $assignmentQuery) =>
             $assignmentQuery->whereIn('hierarchy_node_id', $nodeIds)
         );
     }
@@ -83,12 +94,14 @@ class HierarchyAccessService
             return $query;
         }
 
-        $assignment ??= $this->currentAssignment();
-        if (!$assignment?->hierarchy_node_id) {
+        $assignments = $assignment ? collect([$assignment]) : $this->currentAssignments();
+        if ($assignments->isEmpty()) {
             return $query->whereRaw('1 = 0');
         }
 
-        $nodeIds = $this->hierarchyNodeBranchIds((int) $companyId, (int) $assignment->hierarchy_node_id);
+        $nodeIds = $assignments->flatMap(fn ($item) => $item->hierarchy_node_id
+            ? $this->hierarchyNodeBranchIds((int) $companyId, (int) $item->hierarchy_node_id)
+            : [])->unique()->all();
         return $query->whereIn('geofences.hierarchy_node_id', $nodeIds);
     }
 
@@ -117,9 +130,10 @@ class HierarchyAccessService
     /** Get current user's hierarchy information. */
     public function getAccessInfo(): array
     {
-        $assignment = $this->currentAssignment();
+        $assignments = $this->currentAssignments();
+        $assignment = $assignments->first();
         if (!$assignment) {
-            return ['has_access' => false, 'level' => null, 'id' => null, 'assignment' => null];
+            return ['has_access' => false, 'level' => null, 'id' => null, 'assignment' => null, 'assignments' => []];
         }
 
         return [
@@ -127,6 +141,7 @@ class HierarchyAccessService
             'level' => $this->getAssignedLevel($assignment),
             'id' => $this->getAssignedId($assignment),
             'assignment' => $assignment,
+            'assignments' => $assignments,
         ];
     }
 

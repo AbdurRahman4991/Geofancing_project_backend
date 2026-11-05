@@ -81,6 +81,7 @@ class EmployeeHierarchyAssignmentService
             return [
                 'id' => $assignment->id,
                 'user' => $assignment->user?->name,
+                'user_id' => $assignment->user_id,
                 'company_id' => $assignment->company_id,
                 'company' => $assignment->company?->name,
                 'hierarchy_node_id' => $assignment->hierarchy_node_id,
@@ -98,7 +99,7 @@ class EmployeeHierarchyAssignmentService
     /**
      * Create new assignment
      */
-    public function create(array $data): EmployeeHierarchyAssignment
+    public function create(array $data): \Illuminate\Support\Collection
     {
         return DB::transaction(function () use ($data) {
             $user = User::with('employee')->findOrFail($data['user_id']);
@@ -107,32 +108,37 @@ class EmployeeHierarchyAssignmentService
                 throw ValidationException::withMessages(['user_id' => 'The selected user is not associated with a company.']);
             }
             $this->assertCompanyAccess($companyId);
-            $this->assertHierarchyNodeMatchesUser($data['user_id'], $data['hierarchy_node_id'] ?? null);
-            $assignment = EmployeeHierarchyAssignment::where('user_id', $data['user_id'])
-                ->where('company_id', $companyId)
-                ->where('is_current', true)
-                ->first();
-
-            $attributes = [
-                'company_id' => $companyId,
-                'is_current' => true,
-                'assigned_by' => auth()->id(),
-                'hierarchy_node_id' => $data['hierarchy_node_id'] ?? null,
-            ];
-
-            if ($assignment) {
-                $assignment->update($attributes);
-            } else {
-                $attributes['user_id'] = $data['user_id'];
-                $assignment = EmployeeHierarchyAssignment::create($attributes);
+            $nodeIds = $data['hierarchy_node_ids'] ?? [$data['hierarchy_node_id'] ?? null];
+            $assignments = collect();
+            foreach (array_unique($nodeIds) as $nodeId) {
+                $this->assertHierarchyNodeMatchesUser($data['user_id'], $nodeId);
+                $assignmentQuery = EmployeeHierarchyAssignment::where('user_id', $data['user_id'])
+                    ->where('company_id', $companyId)
+                    ->where('hierarchy_node_id', $nodeId);
+                $assignment = $nodeId === null
+                    ? EmployeeHierarchyAssignment::where('user_id', $data['user_id'])->where('company_id', $companyId)->whereNull('hierarchy_node_id')->first()
+                    : $assignmentQuery->first();
+                if (!$assignment) {
+                    $assignment = new EmployeeHierarchyAssignment([
+                        'user_id' => $data['user_id'],
+                        'company_id' => $companyId,
+                        'hierarchy_node_id' => $nodeId,
+                    ]);
+                }
+                $assignment->is_current = true;
+                $assignment->assigned_by = auth()->id();
+                $assignment->save();
+                $assignments->push($assignment);
             }
 
-            return $assignment->load([
+            $assignments->each(fn (EmployeeHierarchyAssignment $assignment) => $assignment->load([
                 'user',
-                'company',                
+                'company',
                 'hierarchyNode.level',
                 'assignedBy',
-            ]);
+            ]));
+
+            return $assignments;
         });
     }
 
@@ -178,24 +184,16 @@ class EmployeeHierarchyAssignmentService
             /*
              * Same user-এর অন্য assignment inactive
              */
-            $this->scopeForCurrentUser(EmployeeHierarchyAssignment::query())->where(
-                'user_id',
-                $data['user_id']
-            )
-                ->where('company_id', $companyId)
-                ->where('id', '!=', $assignment->id)
-                ->update([
-                    'is_current' => false,
-                ]);
-
             /*
              * Current assignment update
              */
             $assignment->update([
                 'user_id' => $data['user_id'],
                 'company_id' => $companyId,
-                'hierarchy_node_id' => $data['hierarchy_node_id'] ?? null,                
-                'is_current' => true,
+                'hierarchy_node_id' => $data['hierarchy_node_id'] ?? null,
+                'is_current' => array_key_exists('is_current', $data)
+                    ? filter_var($data['is_current'], FILTER_VALIDATE_BOOLEAN)
+                    : $assignment->is_current,
                 'assigned_by' => auth()->id(),
             ]);
 
@@ -242,16 +240,16 @@ class EmployeeHierarchyAssignmentService
         }
 
         $actorCompanyId = $actor->company_id ?? $actor->employee?->company_id;
-        $actorAssignment = EmployeeHierarchyAssignment::query()
+        $actorNodeIds = EmployeeHierarchyAssignment::query()
             ->where('user_id', $actor->id)
             ->where('company_id', $actorCompanyId)
             ->where('is_current', true)
-            ->first();
-        if (!$actorAssignment?->hierarchy_node_id || !in_array(
-            (int) $nodeId,
-            $this->hierarchyNodeBranchIds((int) $actorCompanyId, (int) $actorAssignment->hierarchy_node_id),
-            true
-        )) {
+            ->whereNotNull('hierarchy_node_id')
+            ->pluck('hierarchy_node_id');
+        $accessibleNodeIds = $actorNodeIds->flatMap(fn ($rootId) =>
+            $this->hierarchyNodeBranchIds((int) $actorCompanyId, (int) $rootId)
+        )->unique()->all();
+        if (!in_array((int) $nodeId, $accessibleNodeIds, true)) {
             throw ValidationException::withMessages([
                 'hierarchy_node_id' => 'The selected hierarchy node is outside your hierarchy access.',
             ]);
@@ -277,19 +275,21 @@ class EmployeeHierarchyAssignmentService
             return $query;
         }
 
-        $current = EmployeeHierarchyAssignment::query()
+        $currentNodeIds = EmployeeHierarchyAssignment::query()
             ->where('user_id', $user->id)
             ->where('company_id', $companyId)
             ->where('is_current', true)
-            ->first();
-        if (!$current?->hierarchy_node_id) {
+            ->whereNotNull('hierarchy_node_id')
+            ->pluck('hierarchy_node_id');
+        if ($currentNodeIds->isEmpty()) {
             return $query->whereRaw('1 = 0');
         }
 
-        return $query->whereIn(
-            'hierarchy_node_id',
-            $this->hierarchyNodeBranchIds((int) $companyId, (int) $current->hierarchy_node_id)
-        );
+        $accessibleNodeIds = $currentNodeIds->flatMap(fn ($rootId) =>
+            $this->hierarchyNodeBranchIds((int) $companyId, (int) $rootId)
+        )->unique()->all();
+
+        return $query->whereIn('hierarchy_node_id', $accessibleNodeIds);
     }
 
     /** @return int[] */

@@ -110,7 +110,7 @@ class GeofeneService
 
     public function update(Request $request, $id)
     {
-        if (!auth()->user()->can('market.edit')) {
+        if (!auth()->user()->can('market.update')) {
             abort(403, 'You do not have permission to edit market.');
         }        
         $geofence = $this->findAccessibleGeofence($id);

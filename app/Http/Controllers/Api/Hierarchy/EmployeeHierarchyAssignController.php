@@ -39,15 +39,21 @@ class EmployeeHierarchyAssignController extends Controller
         }         
         $validated = $request->validate([
             'user_id' => ['required', 'integer', 'exists:users,id'],
-            'hierarchy_node_id' => ['nullable', 'integer', 'exists:hierarchy_nodes,id'],
+            'hierarchy_node_ids' => ['sometimes', 'required', 'array', 'min:1'],
+            'hierarchy_node_ids.*' => ['required', 'integer', 'distinct', 'exists:hierarchy_nodes,id'],
+            'hierarchy_node_id' => ['sometimes', 'nullable', 'integer', 'exists:hierarchy_nodes,id', 'required_without:hierarchy_node_ids'],
         ]);
 
-        $assignment = $this->service->create($validated);
+        if (!array_key_exists('hierarchy_node_ids', $validated)) {
+            $validated['hierarchy_node_ids'] = [$validated['hierarchy_node_id'] ?? null];
+        }
+
+        $assignments = $this->service->create($validated);
 
         return response()->json([
             'status' => 201,
             'message' => 'Employee hierarchy assignment created successfully.',
-            'data' => $assignment,
+            'data' => $assignments,
         ], 201);
     }
 
@@ -80,6 +86,7 @@ class EmployeeHierarchyAssignController extends Controller
         $validated = $request->validate([
             'user_id' => ['required', 'integer', 'exists:users,id'],
             'hierarchy_node_id' => ['nullable', 'integer', 'exists:hierarchy_nodes,id'],
+            'is_current' => ['sometimes', 'boolean'],
         ]);
 
         $assignment = $this->service->update($id, $validated);

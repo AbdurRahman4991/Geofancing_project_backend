@@ -90,4 +90,10 @@ class User extends Authenticatable implements MustVerifyEmail
             ->where('is_current', true);
     }
 
+    public function hierarchyAssignments()
+    {
+        return $this->hasMany(EmployeeHierarchyAssignment::class, 'user_id')
+            ->where('is_current', true);
+    }
+
 }

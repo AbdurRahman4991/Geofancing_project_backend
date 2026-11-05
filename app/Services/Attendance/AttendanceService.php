@@ -23,18 +23,18 @@ class AttendanceService
         } 
         $user = Auth::user();
 
-        $assignment = EmployeeHierarchyAssignment::where('user_id', $user->id)
+        $assignments = EmployeeHierarchyAssignment::where('user_id', $user->id)
             ->where('is_current', true)
-            ->first();
+            ->get();
 
-        if (!$assignment) {
+        if ($assignments->isEmpty()) {
             return [
                 'success' => false,
                 'message' => 'No active hierarchy assignment found for this user.'
             ];
         }
 
-        $geofences = $this->geofencesForAssignment($assignment, $user);
+        $geofences = $this->geofencesForAssignments($assignments, $user);
 
         if ($geofences->isEmpty()) {
             return [
@@ -175,18 +175,18 @@ class AttendanceService
 
          $user = Auth::user();
 
-        $assignment = EmployeeHierarchyAssignment::where('user_id', $user->id)
+        $assignments = EmployeeHierarchyAssignment::where('user_id', $user->id)
             ->where('is_current', true)
-            ->first();
+            ->get();
 
-        if (!$assignment) {
+        if ($assignments->isEmpty()) {
             return [
                 'success' => false,
                 'message' => 'No active hierarchy assignment found for this user.'
             ];
         }
 
-        $geofences = $this->geofencesForAssignment($assignment, $user);
+        $geofences = $this->geofencesForAssignments($assignments, $user);
 
         if ($geofences->isEmpty()) {
             return [
@@ -284,46 +284,39 @@ class AttendanceService
     /**
      * ⚙️ Haversine distance formula
      */
-    /** Resolve geofences from either a node assignment or a legacy area assignment. */
-    private function geofencesForAssignment(EmployeeHierarchyAssignment $assignment, $user)
+    /** Resolve and combine geofences from all current hierarchy assignments. */
+    private function geofencesForAssignments($assignments, $user)
     {
-        if ($assignment->hierarchy_node_id) {
-            $node = HierarchyNode::find($assignment->hierarchy_node_id);
-            if (!$node) {
-                return collect();
-            }
-
-            $nodeIds = [(int) $node->id];
-            $frontier = $nodeIds;
-            while ($frontier) {
-                $children = HierarchyNode::forCompany((int) $node->company_id)
-                    ->whereIn('parent_id', $frontier)
-                    ->pluck('id')
-                    ->map(fn ($id) => (int) $id)
-                    ->all();
-                $frontier = array_values(array_diff($children, $nodeIds));
-                $nodeIds = array_merge($nodeIds, $frontier);
-            }
-
-            return Geofence::query()
-                ->where('company_id', $node->company_id)
-                ->whereIn('hierarchy_node_id', $nodeIds)
-                ->get();
-        }
-
-        if (!$assignment->area_id) {
-            return collect();
-        }
-
         $companyId = $user->company_id ?? $user->employee?->company_id;
-        if (!$companyId) {
-            return collect();
+        $geofences = collect();
+        foreach ($assignments as $assignment) {
+            if ($assignment->hierarchy_node_id) {
+                $node = HierarchyNode::find($assignment->hierarchy_node_id);
+                if (!$node) {
+                    continue;
+                }
+                $nodeIds = [(int) $node->id];
+                $frontier = $nodeIds;
+                while ($frontier) {
+                    $children = HierarchyNode::forCompany((int) $node->company_id)
+                        ->whereIn('parent_id', $frontier)
+                        ->pluck('id')->map(fn ($id) => (int) $id)->all();
+                    $frontier = array_values(array_diff($children, $nodeIds));
+                    $nodeIds = array_merge($nodeIds, $frontier);
+                }
+                $geofences = $geofences->concat(Geofence::query()
+                    ->where('company_id', $node->company_id)
+                    ->whereIn('hierarchy_node_id', $nodeIds)
+                    ->get());
+            } elseif ($assignment->area_id && $companyId) {
+                $geofences = $geofences->concat(Geofence::query()
+                    ->where('company_id', $companyId)
+                    ->where('area_id', $assignment->area_id)
+                    ->get());
+            }
         }
 
-        return Geofence::query()
-            ->where('company_id', $companyId)
-            ->where('area_id', $assignment->area_id)
-            ->get();
+        return $geofences->unique('id')->values();
     }
 
     private function calculateDistance($lat1, $lon1, $lat2, $lon2)
@@ -372,23 +365,23 @@ class AttendanceService
                 });
             }
         } elseif ($user->hasRole('territory-manager')) {
-            $territoryId = $user->hierarchyAssignment?->territory_id;
+            $territoryIds = $user->hierarchyAssignments->pluck('territory_id')->filter()->unique();
 
-            if (!$territoryId) {
+            if ($territoryIds->isEmpty()) {
                 $query->whereRaw('1 = 0');
             } else {
-                $query->whereHas('user.hierarchyAssignment', function ($q) use ($territoryId) {
-                    $q->where('territory_id', $territoryId);
+                $query->whereHas('user.hierarchyAssignments', function ($q) use ($territoryIds) {
+                    $q->whereIn('territory_id', $territoryIds);
                 });
             }
         } elseif ($user->hasRole('area-manager')) {
-            $areaId = $user->hierarchyAssignment?->area_id;
+            $areaIds = $user->hierarchyAssignments->pluck('area_id')->filter()->unique();
 
-            if (!$areaId) {
+            if ($areaIds->isEmpty()) {
                 $query->whereRaw('1 = 0');
             } else {
-                $query->whereHas('user.hierarchyAssignment', function ($q) use ($areaId) {
-                    $q->where('area_id', $areaId);
+                $query->whereHas('user.hierarchyAssignments', function ($q) use ($areaIds) {
+                    $q->whereIn('area_id', $areaIds);
                 });
             }
         } else {
