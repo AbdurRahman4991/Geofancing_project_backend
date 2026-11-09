@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\Employee\EmployeeLocationEmployeeController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\Department\DepartmentController;
 use App\Http\Controllers\Api\Category\CategoryController;
 use App\Http\Controllers\Api\Category\SubCategoryController;
@@ -40,6 +41,9 @@ Route::post('/verify-otp', [VerificationController::class, 'verifyOtp']);
 Route::middleware('auth:sanctum', 'throttle:api-auth')->group(function () {
     Route::post('/email/resend', [VerificationController::class, 'resend']);
     Route::get('/user', [AuthController::class, 'user']);
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::patch('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
+    Route::patch('/notifications/{notificationId}/read', [NotificationController::class, 'markAsRead']);
     Route::get('/users', [AuthController::class, 'users']);
     Route::get('/users/{id}', [AuthController::class, 'showUser']);
     Route::match(['put', 'patch'], '/users/{id}', [AuthController::class, 'updateUser']);
@@ -80,4 +84,5 @@ Route::middleware('auth:sanctum', 'throttle:api-auth')->group(function () {
     Route::get('roles/{roleId}/permissions',[RoleController::class, 'getRolePermissions']);
           
 });
+
 
