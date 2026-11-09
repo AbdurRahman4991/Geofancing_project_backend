@@ -5,6 +5,7 @@ namespace App\Services\Hierarchy;
 use App\Models\EmployeeHierarchyAssignment;
 use App\Models\HierarchyNode;
 use App\Models\User;
+use App\Notifications\HierarchyAssignmentNotification;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -101,7 +102,9 @@ class EmployeeHierarchyAssignmentService
      */
     public function create(array $data): \Illuminate\Support\Collection
     {
-        return DB::transaction(function () use ($data) {
+        $newAssignments = collect();
+
+        $assignments = DB::transaction(function () use ($data, &$newAssignments) {
             $user = User::with('employee')->findOrFail($data['user_id']);
             $companyId = (int) ($user->company_id ?? $user->employee?->company_id);
             if (!$companyId) {
@@ -125,10 +128,14 @@ class EmployeeHierarchyAssignmentService
                         'hierarchy_node_id' => $nodeId,
                     ]);
                 }
+                $wasCurrent = (bool) $assignment->is_current;
                 $assignment->is_current = true;
                 $assignment->assigned_by = auth()->id();
                 $assignment->save();
                 $assignments->push($assignment);
+                if (!$wasCurrent) {
+                    $newAssignments->push($assignment);
+                }
             }
 
             $assignments->each(fn (EmployeeHierarchyAssignment $assignment) => $assignment->load([
@@ -140,6 +147,12 @@ class EmployeeHierarchyAssignmentService
 
             return $assignments;
         });
+
+        $newAssignments->each(fn (EmployeeHierarchyAssignment $assignment) =>
+            $this->notifyAssignmentParties($assignment, 'assigned')
+        );
+
+        return $assignments;
     }
 
     /**
@@ -169,7 +182,11 @@ class EmployeeHierarchyAssignmentService
             return null;
         }
 
-        return DB::transaction(function () use (
+        $previousUserId = (int) $assignment->user_id;
+        $previousNodeId = $assignment->hierarchy_node_id;
+        $wasCurrent = (bool) $assignment->is_current;
+
+        $updatedAssignment = DB::transaction(function () use (
             $assignment,
             $data
         ) {
@@ -204,6 +221,20 @@ class EmployeeHierarchyAssignmentService
                 'assignedBy',
             ]);
         });
+
+        $becameCurrent = !$wasCurrent && (bool) $updatedAssignment->is_current;
+        $assignmentChanged = $previousUserId !== (int) $updatedAssignment->user_id
+            || (string) $previousNodeId !== (string) $updatedAssignment->hierarchy_node_id;
+
+        if ($assignmentChanged || $becameCurrent) {
+            $action = $previousNodeId !== null
+                && (string) $previousNodeId !== (string) $updatedAssignment->hierarchy_node_id
+                ? 'transferred'
+                : 'assigned';
+            $this->notifyAssignmentParties($updatedAssignment, $action);
+        }
+
+        return $updatedAssignment;
     }
 
     /**
@@ -218,6 +249,19 @@ class EmployeeHierarchyAssignmentService
         }
 
         return (bool) $assignment->delete();
+    }
+
+    private function notifyAssignmentParties(
+        EmployeeHierarchyAssignment $assignment,
+        string $action
+    ): void {
+        $assignment->loadMissing(['user', 'hierarchyNode', 'assignedBy']);
+        $notification = new HierarchyAssignmentNotification($assignment, $action);
+
+        collect([$assignment->user, $assignment->assignedBy])
+            ->filter()
+            ->unique('id')
+            ->each(fn (User $recipient) => $recipient->notify($notification));
     }
 
     private function assertHierarchyNodeMatchesUser(int $userId, mixed $nodeId): void
@@ -319,3 +363,5 @@ class EmployeeHierarchyAssignmentService
         }
     }
 }
+
+
