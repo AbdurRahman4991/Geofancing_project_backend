@@ -47,6 +47,7 @@ Route::middleware('auth:sanctum', 'throttle:api-auth')->group(function () {
     Route::post('/check-in', [AttendanceController::class, 'checkIn']);
     Route::post('/check-out', [AttendanceController::class, 'checkOut']);
     Route::get('/attendance/history', [AttendanceController::class, 'history']);
+    Route::patch('/attendance/{attendanceId}', [AttendanceController::class, 'update']);
     Route::apiResource('companies', CompanyController::class);
     Route::post('/employee-locations/batch', [EmployeeLocationController::class, 'batch']);
     Route::get('/employee-locations/segments', [EmployeeLocationController::class, 'segments']);
@@ -79,3 +80,4 @@ Route::middleware('auth:sanctum', 'throttle:api-auth')->group(function () {
     Route::get('roles/{roleId}/permissions',[RoleController::class, 'getRolePermissions']);
           
 });
+

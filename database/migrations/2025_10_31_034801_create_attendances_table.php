@@ -35,7 +35,8 @@ return new class extends Migration
                 'Outside Area',
                 'Absent',
                 'Weekend Holyday',
-                'Goverment Holyday'
+                'Goverment Holyday',
+                'Leave'
             ])->default('Checked In');
 
             // 📏 Extra info

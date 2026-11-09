@@ -332,6 +332,22 @@ class AttendanceService
         return $earthRadius * $c;
     }
 
+    public function updateAttendance($attendanceId, array $data)
+    {
+        if (!auth()->user()->can('attendance.edit')) {
+            abort(403, 'You do not have permission to edit attendance.');
+        }
+
+        $attendance = Attendance::findOrFail($attendanceId);
+        $attendance->update($data);
+
+        return [
+            'success' => true,
+            'message' => 'Attendance updated successfully.',
+            'attendance' => $attendance->fresh(),
+        ];
+    }
+
     public function attendanceHistory(Request $request)
     {       
         if (!auth()->user()->can('attendance.view')) {
@@ -444,3 +460,4 @@ class AttendanceService
         return $months[$month] ?? null;
     }
 }
+
