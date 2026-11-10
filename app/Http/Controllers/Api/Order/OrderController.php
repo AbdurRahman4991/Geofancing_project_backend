@@ -28,14 +28,14 @@ class OrderController extends Controller
 
     public function show(Request $request, int $id)
     {
-        $this->authorizeAction('view');
+        $this->authorizeAction('edit');
 
         return response()->json(['data' => $this->orders->show($request, $id)]);
     }
 
     public function update(Request $request, int $id)
     {
-        $this->authorizeAction('edit');
+        $this->authorizeAction('update');
 
         return response()->json(['message' => 'Order updated successfully', 'data' => $this->orders->update($request, $id)]);
     }

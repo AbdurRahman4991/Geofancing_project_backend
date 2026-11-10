@@ -71,7 +71,7 @@ class AttendanceRuleService
 
     public function update(Request $request, $id)
     {
-        if (!auth()->user()->can('attendance-role.edit')) {
+        if (!auth()->user()->can('attendance-role.update')) {
         abort(403, 'You do not have permission to view  attendance role.');
         }
         $attendanceRule = AttendanceRule::findOrFail($id);
@@ -92,6 +92,9 @@ class AttendanceRuleService
 
     public function destroy($id)
     {
+        if (!auth()->user()->can('attendance-role.delete')) {
+        abort(403, 'You do not have permission to delete  attendance role.');
+        }        
         $attendanceRule = AttendanceRule::findOrFail($id);
         return $attendanceRule->delete();
     }

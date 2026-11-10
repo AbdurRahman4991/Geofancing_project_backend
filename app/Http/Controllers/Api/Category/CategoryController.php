@@ -41,14 +41,14 @@ class CategoryController extends Controller
 
     public function show(Request $request, int $id)
     {
-        $this->authorizeAction('view');
+        $this->authorizeAction('edit');
 
         return response()->json(['status' => 200, 'data' => $this->service->find($this->companyId($request), $id)]);
     }
 
     public function update(Request $request, int $id)
     {
-        $this->authorizeAction('edit');
+        $this->authorizeAction('update');
         $data = $request->validate([
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'description' => ['sometimes', 'nullable', 'string', 'max:5000'],

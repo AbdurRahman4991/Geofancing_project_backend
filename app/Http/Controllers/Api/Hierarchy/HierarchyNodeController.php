@@ -44,7 +44,7 @@ class HierarchyNodeController extends Controller
 
     public function show(Request $request, int $id)
     {
-        $this->authorizeAction('view');
+        $this->authorizeAction('edit');
 
         return response()->json([
             'status' => 200,
@@ -54,7 +54,7 @@ class HierarchyNodeController extends Controller
 
     public function update(Request $request, int $id)
     {
-        $this->authorizeAction('edit');
+        $this->authorizeAction('update');
         $data = $request->validate([
             'hierarchy_level_id' => ['sometimes', 'required', 'integer', 'exists:hierarchy_levels,id'],
             'parent_id' => ['sometimes', 'nullable', 'integer', 'exists:hierarchy_nodes,id'],

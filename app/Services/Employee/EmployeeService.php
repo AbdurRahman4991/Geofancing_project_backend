@@ -155,6 +155,9 @@ public function index(Request $request)
 
     private function importEmployeesFromFile(Request $request)
     {
+        if (!auth()->user()->can('employee.create')) {
+            abort(403, 'You do not have permission to create employees.');
+        }        
         $request->validate([
             'file' => 'required|file|mimes:csv,txt,xlsx,xls|max:10240',
         ]);

@@ -75,7 +75,7 @@ class PermissionController extends Controller
      */
     public function update(Request $request, Permission $permission)
     {
-        if (!auth()->user()->can('permission.edit')) {
+        if (!auth()->user()->can('permission.update')) {
         abort(403, 'You do not have permission to permission edit.');
         }         
         $request->validate([

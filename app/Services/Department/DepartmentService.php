@@ -50,13 +50,13 @@ class DepartmentService
 
     public function show(int $id): Department
     {
-        $this->authorize('view');
+        $this->authorize('edit');
         return $this->accessibleQuery()->with('company:id,company_name')->findOrFail($id);
     }
 
     public function update(Request $request, int $id): Department
     {
-        $this->authorize('edit');
+        $this->authorize('update');
         $department = $this->accessibleQuery()->findOrFail($id);
         $data = $this->validatedData($request, $department);
         unset($data['company_id']);

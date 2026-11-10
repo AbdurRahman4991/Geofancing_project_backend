@@ -45,14 +45,14 @@ class ProductController extends Controller
 
     public function show(Request $request, int $id)
     {
-        $this->authorizeAction('view');
+        $this->authorizeAction('edit');
 
         return response()->json(['data' => $this->productService->show($request, $id)]);
     }
 
     public function update(Request $request, int $id)
     {
-        $this->authorizeAction('edit');
+        $this->authorizeAction('update');
 
         return response()->json([
             'message' => 'Product updated successfully',

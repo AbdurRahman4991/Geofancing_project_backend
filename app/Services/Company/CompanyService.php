@@ -50,9 +50,7 @@ class CompanyService
 
     public function store(Request $request)
     {
-        // if (!auth()->user()->can('company.create')) {
-        //     abort(403, 'You do not have permission to view employees.');
-        // }
+
         $company = Company::create($request->only(['company_name', 'email', 'phone', 'address','details','package','billing_cycle','status']));
 
         if ($request->hasFile('avatar')) {
@@ -83,7 +81,7 @@ class CompanyService
 
     public function update(Request $request, $id)
     {
-        if (!auth()->user()->can('company.edit')) {
+        if (!auth()->user()->can('company.update')) {
         abort(403, 'You do not have permission to view employees.');
         }
         $query = Company::query();
@@ -104,6 +102,9 @@ class CompanyService
 
     public function destroy($id)
     {
+        if (!auth()->user()->can('company.delete')) {
+        abort(403, 'You do not have permission to view employees.');
+        }        
         $query = Company::query();
         $this->scopeToAccessibleCompanies($query);
         $company = $query->findOrFail($id);

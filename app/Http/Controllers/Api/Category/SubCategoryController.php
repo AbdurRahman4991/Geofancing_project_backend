@@ -26,13 +26,13 @@ class SubCategoryController extends Controller
 
     public function show(Request $request, int $id)
     {
-        $this->authorizeAction('view');
+        $this->authorizeAction('edit');
         return response()->json(['status' => 200, 'data' => $this->service->show($request, $id)]);
     }
 
     public function update(Request $request, int $id)
     {
-        $this->authorizeAction('edit');
+        $this->authorizeAction('update');
         return response()->json(['status' => 200, 'message' => 'Subcategory updated successfully.', 'data' => $this->service->update($request, $id)]);
     }
 

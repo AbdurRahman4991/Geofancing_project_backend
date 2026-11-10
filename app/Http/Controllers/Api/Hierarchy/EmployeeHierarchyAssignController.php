@@ -79,7 +79,7 @@ class EmployeeHierarchyAssignController extends Controller
 
     public function update(Request $request, int $id)
     {
-        if (!auth()->user()->can('employee-hierarchy-assign.edit')) {
+        if (!auth()->user()->can('employee-hierarchy-assign.update')) {
         abort(403, 'You do not have permission to employee-hierarchy-assign edit.');
         }
 

@@ -158,7 +158,7 @@ class EmployeeLocationController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        if (!auth()->user()->can('employee-location.edit')) {
+        if (!auth()->user()->can('employee-location.update')) {
             abort(403, 'You do not have permission to employee location edit .');
         }        
         $query = EmployeeLocation::query();
