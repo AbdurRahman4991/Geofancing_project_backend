@@ -15,6 +15,7 @@ use Carbon\Carbon;
 use App\Mail\SendOtpMail;
 use Illuminate\Support\Facades\Hash;
 use App\Services\User\UserService;
+use App\Models\Company;
 
 class AuthController extends Controller
 {
@@ -164,6 +165,44 @@ class AuthController extends Controller
         ]);
     }
 
+    // public function adminLogin(Request $request)
+    // {
+    //     $request->validate([
+    //         'email'    => 'required|email',
+    //         'password' => 'required|string',
+    //     ]);
+
+    //     if (!Auth::attempt($request->only('email', 'password'))) {
+    //         throw ValidationException::withMessages([
+    //             'email' => ['The provided credentials are incorrect.'],
+    //         ]);
+    //     }
+
+    //     // Login User
+    //     $user = Auth::user();
+    //     $companyId = $user->company_id ?? $user->employee?->company_id;
+    //     $roleNames = $user->getRoleNames()->values();
+        
+    //     $user->tokens()->delete();
+        
+    //     $token = $user->createToken('admin-token')->plainTextToken;
+
+    //     return response()->json([
+    //         'status' => true,
+    //         'message' => 'Login successful.',
+    //         'token' => $token,
+    //         'token_type' => 'Bearer',
+    //         'user' => [
+    //             'id' => $user->id,
+    //             'name' => $user->name,
+    //             'email' => $user->email,
+    //             'company_id' => $companyId,
+    //             'roles' => $roleNames,
+    //         ]
+    //     ]);
+    // }
+    
+
     public function adminLogin(Request $request)
     {
         $request->validate([
@@ -179,11 +218,21 @@ class AuthController extends Controller
 
         // Login User
         $user = Auth::user();
+
+        // Get Company ID
         $companyId = $user->company_id ?? $user->employee?->company_id;
+
+        // Get Company Information
+        $company = $companyId
+            ? Company::find($companyId)
+            : null;
+
         $roleNames = $user->getRoleNames()->values();
-        
+
+        // Delete Previous Tokens
         $user->tokens()->delete();
-        
+
+        // Create New Token
         $token = $user->createToken('admin-token')->plainTextToken;
 
         return response()->json([
@@ -191,11 +240,14 @@ class AuthController extends Controller
             'message' => 'Login successful.',
             'token' => $token,
             'token_type' => 'Bearer',
+
             'user' => [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
                 'company_id' => $companyId,
+                'company_name' => $company?->company_name,
+                'company_logo' => $company?->avatar_url,
                 'roles' => $roleNames,
             ]
         ]);

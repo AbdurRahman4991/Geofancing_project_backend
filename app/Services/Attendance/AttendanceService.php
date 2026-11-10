@@ -17,6 +17,7 @@ class AttendanceService
 {
     
     public function checkIn($data)
+    
     {
         if (!auth()->user()->can('checkin.create')) {
             abort(403, 'You do not have permission to create checkin.');
