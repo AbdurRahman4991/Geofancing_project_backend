@@ -58,6 +58,7 @@ class PermissionSeeder extends Seeder
             'market.edit',	
             'market.update',	
             'market.view',
+            'market-visit.create',
             'order.create',	
             'order.edit',	
             'order.update',	

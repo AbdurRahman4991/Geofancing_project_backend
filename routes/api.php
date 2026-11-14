@@ -28,6 +28,8 @@ use App\Http\Controllers\Api\Hierarchy\EmployeeHierarchyAssignController;
 use App\Http\Controllers\Api\Hierarchy\HierarchyLevelController;
 use App\Http\Controllers\Api\Hierarchy\HierarchyNodeController;
 use App\Http\Controllers\Api\Order\OrderController;
+use App\Http\Controllers\Api\Market\MarketVisitController;
+use App\Http\Controllers\Api\Report\MarketVisitReport;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -50,6 +52,7 @@ Route::middleware('auth:sanctum', 'throttle:api-auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/check-in', [AttendanceController::class, 'checkIn']);
     Route::post('/check-out', [AttendanceController::class, 'checkOut']);
+    Route::post('/market-visits', [MarketVisitController::class, 'CreateMarketVisit']);
     Route::get('/attendance/history', [AttendanceController::class, 'history']);
     Route::patch('/attendance/{attendanceId}', [AttendanceController::class, 'update']);
     Route::apiResource('companies', CompanyController::class);
@@ -82,6 +85,9 @@ Route::middleware('auth:sanctum', 'throttle:api-auth')->group(function () {
     Route::apiResource('hierarchy-nodes', HierarchyNodeController::class);
     Route::apiResource('employee-hierarchy-assignments', EmployeeHierarchyAssignController::class );
     Route::get('roles/{roleId}/permissions',[RoleController::class, 'getRolePermissions']);
+
+    // Report 
+      Route::get('/report-market-visits', [MarketVisitReport::class, 'index']);
           
 });
 

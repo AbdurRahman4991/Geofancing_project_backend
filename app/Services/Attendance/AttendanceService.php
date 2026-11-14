@@ -16,8 +16,7 @@ use Illuminate\Support\Facades\Cache;
 class AttendanceService
 {
     
-    public function checkIn($data)
-    
+    public function checkIn($data)    
     {
         if (!auth()->user()->can('checkin.create')) {
             abort(403, 'You do not have permission to create checkin.');
@@ -73,44 +72,44 @@ class AttendanceService
         // Find matched geofence
         // =============================================
 
-        $matchedGeofence = null;
-        $distance = 0;
+        // $matchedGeofence = null;
+        // $distance = 0;
 
-        foreach ($geofences as $geofence) {
+        // foreach ($geofences as $geofence) {
 
-            $distance = $this->calculateDistance(
-                $geofence->latitude,
-                $geofence->longitude,
-                $data['latitude'],
-                $data['longitude']
-            );
+        //     $distance = $this->calculateDistance(
+        //         $geofence->latitude,
+        //         $geofence->longitude,
+        //         $data['latitude'],
+        //         $data['longitude']
+        //     );
 
-            if ($distance <= $geofence->radius) {
-                $matchedGeofence = $geofence;
-                break;
-            }
-        }
+        //     if ($distance <= $geofence->radius) {
+        //         $matchedGeofence = $geofence;
+        //         break;
+        //     }
+        // }
 
-        if (!$matchedGeofence) {
-            return [
-                'success' => false,
-                'message' => 'You are outside all allowed office areas!'
-            ];
-        }
+        // if (!$matchedGeofence) {
+        //     return [
+        //         'success' => false,
+        //         'message' => 'You are outside all allowed office areas!'
+        //     ];
+        // }
 
         // =============================================
         // Prevent duplicate check-in
         // =============================================
 
         $alreadyCheckedIn = Attendance::where('user_id', $user->id)
-            ->where('geofence_id', $matchedGeofence->id)
+            //->where('geofence_id', $matchedGeofence->id)
             ->whereDate('check_in_time', Carbon::today())
             ->exists();
 
         if ($alreadyCheckedIn) {
             return [
                 'success' => false,
-                'message' => 'You have already checked in at this location today!'
+                'message' => 'You have already checked in today!'
             ];
         }
 
@@ -147,13 +146,13 @@ class AttendanceService
 
         $attendance = Attendance::create([
             'user_id' => $user->id,
-            'geofence_id' => $matchedGeofence->id,
+            //'geofence_id' => $matchedGeofence->id,
             'check_in_time' => $checkInTime,
             'check_in_latitude' => $data['latitude'],
             'check_in_longitude' => $data['longitude'],
             'device_id' => $data['device_id'],
             'status' => 'Checked In',
-            'distance_from_office' => $distance,
+            //'distance_from_office' => $distance,
             'late' => $lateFormatted,
         ]);
 
@@ -200,37 +199,37 @@ class AttendanceService
         // ==========================================
         // Step 2: Find matched geofence
         // ==========================================
-        $matchedGeofence = null;
-        $distance = 0;
+        // $matchedGeofence = null;
+        // $distance = 0;
 
-        foreach ($geofences as $geofence) {
+        // foreach ($geofences as $geofence) {
 
-            $distance = $this->calculateDistance(
-                $geofence->latitude,
-                $geofence->longitude,
-                $data['latitude'],
-                $data['longitude']
-            );
+        //     $distance = $this->calculateDistance(
+        //         $geofence->latitude,
+        //         $geofence->longitude,
+        //         $data['latitude'],
+        //         $data['longitude']
+        //     );
 
-            if ($distance <= $geofence->radius) {
-                $matchedGeofence = $geofence;
-                break;
-            }
-        }
+        //     if ($distance <= $geofence->radius) {
+        //         $matchedGeofence = $geofence;
+        //         break;
+        //     }
+        // }
 
-        if (!$matchedGeofence) {
-            return [
-                'success' => false,
-                'message' => 'You are outside all allowed office areas!'
-            ];
-        }
+        // if (!$matchedGeofence) {
+        //     return [
+        //         'success' => false,
+        //         'message' => 'You are outside all allowed office areas!'
+        //     ];
+        // }
 
         // ==========================================
         // Step 3: Find today's attendance for
         // this geofence only
         // ==========================================
         $attendance = Attendance::where('user_id', $user->id)
-            ->where('geofence_id', $matchedGeofence->id)
+            //->where('geofence_id', $matchedGeofence->id)
             ->whereDate('check_in_time', Carbon::today('Asia/Dhaka'))
             ->whereNull('check_out_time')
             ->latest()
@@ -320,18 +319,18 @@ class AttendanceService
         return $geofences->unique('id')->values();
     }
 
-    private function calculateDistance($lat1, $lon1, $lat2, $lon2)
-    {
-        $earthRadius = 6371000; // meters
-        $latDelta = deg2rad($lat2 - $lat1);
-        $lonDelta = deg2rad($lon2 - $lon1);
+    // private function calculateDistance($lat1, $lon1, $lat2, $lon2)
+    // {
+    //     $earthRadius = 6371000; // meters
+    //     $latDelta = deg2rad($lat2 - $lat1);
+    //     $lonDelta = deg2rad($lon2 - $lon1);
 
-        $a = sin($latDelta / 2) ** 2 +
-            cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($lonDelta / 2) ** 2;
-        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+    //     $a = sin($latDelta / 2) ** 2 +
+    //         cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($lonDelta / 2) ** 2;
+    //     $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
 
-        return $earthRadius * $c;
-    }
+    //     return $earthRadius * $c;
+    // }
 
     public function updateAttendance($attendanceId, array $data)
     {

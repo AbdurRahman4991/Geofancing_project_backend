@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use App\Services\Hierarchy\HierarchyAccessService;
+use Illuminate\Support\Facades\DB;
 
 class GeofeneService
 {
@@ -67,7 +68,8 @@ class GeofeneService
     {
         if (!auth()->user()->can('market.create')) {
             abort(403, 'You do not have permission to create market.');
-        }        
+        }
+
         $data = $request->validate([
             'company_id' => ['required', 'integer', 'exists:companies,id'],
             'hierarchy_node_id' => ['nullable', 'integer', 'exists:hierarchy_nodes,id'],
@@ -77,28 +79,51 @@ class GeofeneService
             'longitude' => ['required', 'numeric'],
             'radius' => ['sometimes', 'integer', 'min:1'],
         ]);
+
         $companyId = $data['company_id'];
-        $this->assertHierarchyNodeCompany($data['hierarchy_node_id'] ?? null, $companyId);
 
-        $geofence = Geofence::create(array_merge($request->only([
-            'company_id',            
-            'hierarchy_node_id',
-            'firm_name',
-            'address',
-            'latitude',
-            'longitude',
-            'radius',
-        ]), ['radius' => $data['radius'] ?? 100]));
+        $this->assertHierarchyNodeCompany(
+            $data['hierarchy_node_id'] ?? null,
+            $companyId
+        );
 
-        if ($request->hasFile('image')) {
-            $geofence->uploadImage($request->file('image'));
-        }
+        $geofence = DB::transaction(function () use ($data, $request) {
 
-        return $geofence->load([
-            'company:id,company_name',
-            'user:id,name',
-            'hierarchyNode:id,name,hierarchy_level_id,parent_id',
-        ]);
+            $lastId = Geofence::max('id') ?? 0;
+
+            $customerCode = 'CUS-' . str_pad(
+                $lastId + 1,
+                6,
+                '0',
+                STR_PAD_LEFT
+            );
+
+            $geofence = Geofence::create([
+                'company_id' => $data['company_id'],
+                'hierarchy_node_id' => $data['hierarchy_node_id'] ?? null,
+                'firm_name' => $data['firm_name'],
+                'address' => $data['address'] ?? null,
+                'customer_code' => $customerCode,
+                'latitude' => $data['latitude'],
+                'longitude' => $data['longitude'],
+                'radius' => $data['radius'] ?? 100,
+            ]);
+
+            if ($request->hasFile('image')) {
+                $geofence->uploadImage($request->file('image'));
+            }
+
+            return $geofence;
+        });
+
+        return response()->json([
+            'message' => 'Market created successfully.',
+            'data' => $geofence->load([
+                'company:id,company_name',
+                'user:id,name',
+                'hierarchyNode:id,name,hierarchy_level_id,parent_id',
+            ]),
+        ], 201);
     }
 
     public function show($id)
