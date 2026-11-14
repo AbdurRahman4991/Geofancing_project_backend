@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Carbon\Carbon;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class MarketVisitReport extends Controller
 {
@@ -25,6 +26,7 @@ public function index(Request $request)
         'hierarchy_level_id' => ['nullable', 'integer'],
         'hierarchy_node_id' => ['nullable', 'integer'],
         'user_id' => ['nullable', 'integer'],
+        'export' => ['nullable', Rule::in(['pdf', 'excel'])],        
 
         'visit_status' => [
             'nullable',
@@ -42,6 +44,9 @@ public function index(Request $request)
     // =====================================
 
     $companyId = $user->company_id;
+    $company = DB::table('companies')
+    ->where('id', $companyId)
+    ->first();
 
     $period = $request->period ?? 'daily';
     $visitStatus = $request->visit_status ?? 'all';
@@ -222,6 +227,48 @@ public function index(Request $request)
 
     $query->orderBy('g.id')
         ->orderByDesc('mv.visit_start_time');
+
+
+
+    // =====================================
+    // EXPORT PDF / EXCEL
+    // =====================================
+
+    if ($request->export === 'excel') {
+
+        $markets = (clone $query)->get();
+
+        return Excel::download(
+            new MarketVisitExport($markets),
+            'market_visit_report.xlsx'
+        );
+    }
+
+
+    if ($request->export === 'pdf') {
+
+        $markets = (clone $query)->get();
+
+        $pdf = Pdf::loadView(
+            'reports.market_visit_pdf',
+            [
+                'markets' => $markets,
+                'summary' => $summary,
+                'company' => $company,
+
+                'filters' => [
+                    'from_date' => $fromDate->toDateString(),
+                    'to_date' => $toDate->copy()->subDay()->toDateString(),
+                ],
+            ]
+        );
+
+        $pdf->setPaper('a4', 'landscape');
+
+        return $pdf->download('market_visit_report.pdf');
+    }
+
+
 
     // =====================================
     // PAGINATION

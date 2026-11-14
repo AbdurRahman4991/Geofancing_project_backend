@@ -44,6 +44,14 @@ class AttendanceService
         }
 
         // =============================================
+        // Get Company ID
+        // =============================================
+
+        $employee = $user->employee ?? Employee::find($user->employee_id);
+
+        $companyId = $user->company_id ?? $employee?->company_id;        
+
+        // =============================================
         // Get attendance rule
         // =============================================
 
@@ -100,10 +108,12 @@ class AttendanceService
         // =============================================
         // Prevent duplicate check-in
         // =============================================
+        $checkInTime = Carbon::now('Asia/Dhaka');
+        $checkInDate = $checkInTime->toDateString();
 
         $alreadyCheckedIn = Attendance::where('user_id', $user->id)
-            //->where('geofence_id', $matchedGeofence->id)
-            ->whereDate('check_in_time', Carbon::today())
+            ->where('company_id', $companyId)
+            ->where('check_in_date', $checkInDate)
             ->exists();
 
         if ($alreadyCheckedIn) {
@@ -122,7 +132,7 @@ class AttendanceService
             'Asia/Dhaka'
         );
 
-        $checkInTime = Carbon::now('Asia/Dhaka');
+
 
         $lateFormatted = null;
 
@@ -147,6 +157,8 @@ class AttendanceService
         $attendance = Attendance::create([
             'user_id' => $user->id,
             //'geofence_id' => $matchedGeofence->id,
+            'company_id' => $companyId,
+            'check_in_date' => $checkInDate,
             'check_in_time' => $checkInTime,
             'check_in_latitude' => $data['latitude'],
             'check_in_longitude' => $data['longitude'],
@@ -263,6 +275,60 @@ class AttendanceService
             $minutes
         );
 
+        $attendanceRule = AttendanceRule::where('user_id', $user->id)->first();
+
+        if (!$attendanceRule) {
+            $employee = $user->employee ?? Employee::find($user->employee_id);
+            $companyId = $user->company_id ?? $employee?->company_id;
+
+            if ($companyId) {
+                $attendanceRule = AttendanceRule::where('company_id', $companyId)
+                    ->whereNull('user_id')
+                    ->first();
+            }
+        }
+
+        if (!$attendanceRule) {
+            return [
+                'success' => false,
+                'message' => 'Attendance rule not found!'
+            ];
+        }
+
+        // ==========================================
+        // Step 5: Calculate Early Out
+        // ==========================================
+
+        // ==========================================
+        // Step 5: Calculate Early Out
+        // ==========================================
+
+        $officeOutTime = Carbon::parse(
+            $checkOutTime->toDateString() . ' ' . $attendanceRule->office_out_time,
+            'Asia/Dhaka'
+        );
+\Log::info('Early Out Debug', [
+    'office_out_time_from_db' => $attendanceRule->office_out_time,
+    'check_out_time' => $checkOutTime->format('Y-m-d H:i:s'),
+    'office_out_datetime' => $officeOutTime->format('Y-m-d H:i:s'),
+    'is_early' => $checkOutTime->lessThan($officeOutTime),
+]);
+
+$earlyOutFormatted = null;
+
+if ($checkOutTime->lessThan($officeOutTime)) {
+
+    $earlyMinutes = (int) $checkOutTime->diffInMinutes($officeOutTime);
+
+    $hours = intdiv($earlyMinutes, 60);
+    $minutes = $earlyMinutes % 60;
+
+    $earlyOutFormatted = sprintf(
+        '%02d hour %02d minute',
+        $hours,
+        $minutes
+    );
+}
         // ==========================================
         // Step 5: Update attendance
         // ==========================================
@@ -270,6 +336,7 @@ class AttendanceService
             'check_out_time' => $checkOutTime,
             'check_out_latitude' => $data['latitude'],
             'check_out_longitude' => $data['longitude'],
+            'early_out' => $earlyOutFormatted,
             'work_hour' => $workHourFormatted,
             'status' => 'Checked Out',
         ]);

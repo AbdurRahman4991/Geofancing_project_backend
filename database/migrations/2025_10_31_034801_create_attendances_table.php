@@ -13,8 +13,8 @@ return new class extends Migration
 
             // 🔗 Foreign Key
             $table->unsignedBigInteger('user_id');
-
-            // 🕒 Attendance times
+            $table->foreignId('company_id')->nullable()->constrained('companies')->nullOnDelete();
+            $table->date('check_in_date')->nullable();          
             $table->dateTime('check_in_time')->nullable();
             $table->decimal('check_in_latitude', 10, 6)->nullable();
             $table->decimal('check_in_longitude', 10, 6)->nullable();
@@ -22,6 +22,7 @@ return new class extends Migration
             $table->dateTime('check_out_time')->nullable();
             $table->string('work_hour')->nullable();
             $table->string('late')->nullable();
+            $table->string('early_out')->nullable();
 
             // 📍 Checkout location
             $table->decimal('check_out_latitude', 10, 6)->nullable();

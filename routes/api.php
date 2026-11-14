@@ -30,6 +30,7 @@ use App\Http\Controllers\Api\Hierarchy\HierarchyNodeController;
 use App\Http\Controllers\Api\Order\OrderController;
 use App\Http\Controllers\Api\Market\MarketVisitController;
 use App\Http\Controllers\Api\Report\MarketVisitReport;
+use App\Http\Controllers\Api\Report\AttendanceReportController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -87,7 +88,8 @@ Route::middleware('auth:sanctum', 'throttle:api-auth')->group(function () {
     Route::get('roles/{roleId}/permissions',[RoleController::class, 'getRolePermissions']);
 
     // Report 
-      Route::get('/report-market-visits', [MarketVisitReport::class, 'index']);
+    Route::get('/report-market-visits', [MarketVisitReport::class, 'index']);
+    Route::get('/report-attendances',[AttendanceReportController::class, 'index'] );
           
 });
 

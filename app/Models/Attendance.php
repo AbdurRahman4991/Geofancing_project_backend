@@ -8,6 +8,8 @@ class Attendance extends Model
 {
         protected $fillable = [
         'user_id',
+        'company_id',
+        'check_in_date',
         'check_in_time',
         'check_in_latitude',
         'check_in_longitude',
@@ -20,6 +22,7 @@ class Attendance extends Model
         'device_id',
         'remarks',
         'late',
+        'early_out',
         'work_hour'
     ];
 
