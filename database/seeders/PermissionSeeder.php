@@ -41,7 +41,7 @@ class PermissionSeeder extends Seeder
             'employee-location.create',	
             'employee-location.edit',	
             'employee-location.view',
-            'mployee-location.update',	
+            'employee-location.update',	
             'employee.create',	
             'employee.edit',	
             'employee.view',
@@ -95,7 +95,7 @@ class PermissionSeeder extends Seeder
             'user.create',	
             'user.edit',	
             'user.update',	
-            'user.view,           ' 
+            'user.view' 
 
         ];
 

@@ -108,7 +108,8 @@ class AuthController extends Controller
         ])
         ->with([
             'employee:id,name,employee_id,company_id,designation_id',
-            'hierarchyAssignments:id,user_id,hierarchy_node_id'
+            'hierarchyAssignments:id,user_id,hierarchy_node_id',
+            'hierarchyAssignments.hierarchyNode:id,name',
         ])
         ->where('email', $request->email)
         ->first();

@@ -31,6 +31,7 @@ use App\Http\Controllers\Api\Order\OrderController;
 use App\Http\Controllers\Api\Market\MarketVisitController;
 use App\Http\Controllers\Api\Report\MarketVisitReport;
 use App\Http\Controllers\Api\Report\AttendanceReportController;
+use App\Http\Controllers\Api\Report\OrderReportController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -90,6 +91,11 @@ Route::middleware('auth:sanctum', 'throttle:api-auth')->group(function () {
     // Report 
     Route::get('/report-market-visits', [MarketVisitReport::class, 'index']);
     Route::get('/report-attendances',[AttendanceReportController::class, 'index'] );
+    // Route::middleware('auth:sanctum')->prefix('reports')->group(function () {
+    Route::get('/report-orders', [OrderReportController::class, 'index']);
+    Route::get('/report-orders/items', [OrderReportController::class, 'items']);
+    Route::get('/report-orders/export', [OrderReportController::class, 'export']);
+//});
           
 });
 

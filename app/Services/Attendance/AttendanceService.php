@@ -34,14 +34,14 @@ class AttendanceService
             ];
         }
 
-        $geofences = $this->geofencesForAssignments($assignments, $user);
+        // $geofences = $this->geofencesForAssignments($assignments, $user);
 
-        if ($geofences->isEmpty()) {
-            return [
-                'success' => false,
-                'message' => 'No geofence is configured for this hierarchy assignment.'
-            ];
-        }
+        // if ($geofences->isEmpty()) {
+        //     return [
+        //         'success' => false,
+        //         'message' => 'No geofence is configured for this hierarchy assignment.'
+        //     ];
+        // }
 
         // =============================================
         // Get Company ID
