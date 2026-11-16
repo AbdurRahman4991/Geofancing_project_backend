@@ -383,7 +383,7 @@ class OrderReportController extends Controller
                                 ],
                             ];
                         })
-                        ->values(),
+                    ->values(),
                 ];
             })
             ->values();
