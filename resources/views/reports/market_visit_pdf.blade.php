@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
 
-    <title>Employee Registration Report</title>
+    <title>Market Visit Report</title>
 
     <style>
         body {
@@ -33,13 +33,13 @@
 
         .report-title {
             text-align: center;
-            font-size: 16px;
+            font-size: 17px;
             font-weight: bold;
             margin: 15px 0;
         }
 
         .summary {
-            margin-bottom: 15px;
+            margin-bottom: 18px;
         }
 
         .summary table {
@@ -49,12 +49,14 @@
 
         .summary td {
             border: 1px solid #ccc;
-            padding: 7px;
+            padding: 8px;
+            width: 25%;
         }
 
         .details {
             width: 100%;
             border-collapse: collapse;
+            margin-top: 10px;
         }
 
         .details th,
@@ -62,10 +64,12 @@
             border: 1px solid #333;
             padding: 6px;
             text-align: left;
+            vertical-align: top;
         }
 
         .details th {
             background-color: #eeeeee;
+            font-size: 8px;
         }
 
         .section-title {
@@ -74,14 +78,24 @@
             margin-bottom: 8px;
         }
 
-        .registered {
+        .visited {
             color: green;
             font-weight: bold;
         }
 
-        .unregistered {
+        .not-visited {
             color: red;
             font-weight: bold;
+        }
+
+        .footer {
+            margin-top: 15px;
+            text-align: right;
+            font-weight: bold;
+        }
+
+        .text-center {
+            text-align: center;
         }
     </style>
 </head>
@@ -119,7 +133,7 @@
     <!-- REPORT TITLE -->
 
     <div class="report-title">
-        EMPLOYEE REGISTRATION REPORT
+        MARKET VISIT REPORT
     </div>
 
 
@@ -132,6 +146,7 @@
         </div>
 
         <table>
+
             <tr>
                 <td>
                     <strong>Report Date:</strong>
@@ -139,122 +154,192 @@
                 </td>
 
                 <td>
-                    <strong>Total Employees:</strong>
-                    {{ $summary['total_employees'] }}
+                    <strong>From Date:</strong>
+                    {{ $filters['from_date'] ?? 'N/A' }}
                 </td>
 
                 <td>
-                    <strong>Registered Employees:</strong>
-                    {{ $summary['registered_employees'] }}
+                    <strong>To Date:</strong>
+                    {{ $filters['to_date'] ?? 'N/A' }}
                 </td>
 
                 <td>
-                    <strong>Unregistered Employees:</strong>
-                    {{ $summary['unregistered_employees'] }}
+                    <strong>Total Visits:</strong>
+                    {{ $summary->total_visits ?? 0 }}
                 </td>
             </tr>
 
             <tr>
                 <td>
-                    <strong>Registration Rate:</strong>
-                    {{ $summary['registration_rate'] }}%
+                    <strong>Total Employees:</strong>
+                    {{ $summary->total_employees ?? 0 }}
                 </td>
 
                 <td>
-                    <strong>Registration Filter:</strong>
-                    {{ ucfirst($filters['registration_status'] ?? 'both') }}
+                    <strong>Total Markets:</strong>
+                    {{ $summary->total_markets ?? 0 }}
                 </td>
 
                 <td>
-                    <strong>Employee Status:</strong>
-                    {{ ucfirst($filters['employee_status'] ?? 'All') }}
+                    <strong>Visited Markets:</strong>
+                    {{ $summary->visited_markets ?? 0 }}
                 </td>
 
                 <td>
-                    <strong>Search:</strong>
-                    {{ $filters['search'] ?? 'All Employees' }}
+                    <strong>Not Visited Markets:</strong>
+                    {{ $summary->none_visited_markets ?? 0 }}
                 </td>
             </tr>
+
+            <tr>
+                <td>
+                    <strong>Completed Visits:</strong>
+                    {{ $summary->completed_visits ?? 0 }}
+                </td>
+
+                <td>
+                    <strong>Active Visits:</strong>
+                    {{ $summary->active_visits ?? 0 }}
+                </td>
+
+                <td>
+                    <strong>Total Duration:</strong>
+                    {{ $summary->total_duration ?? 0 }}
+                </td>
+
+                <td>
+                    <strong>Visit Status:</strong>
+                    {{ ucfirst($filters['visit_status'] ?? 'all') }}
+                </td>
+            </tr>
+
         </table>
 
     </div>
 
 
-    <!-- EMPLOYEE REGISTRATION DETAILS -->
+    <!-- MARKET VISIT DETAILS -->
 
     <div class="section-title">
-        Employee Registration Details
+        Market Visit Details
     </div>
 
     <table class="details">
 
         <thead>
+
             <tr>
                 <th>SL</th>
-                <th>Employee Code</th>
+                <th>Market Name</th>
+                <th>Market Address</th>
+                <th>Hierarchy Level</th>
+                <th>Hierarchy Node</th>
                 <th>Employee Name</th>
-                <th>Phone</th>
-                <th>Email</th>
-                <th>Employee Status</th>
-                <th>Registration Status</th>
-                <th>User ID</th>
-                <th>User Status</th>
-                <th>Registered At</th>
+                <th>Visit Status</th>
+                <th>Visit Start</th>
+                <th>Visit End</th>
+                <th>Duration</th>
+                <th>Check-in Location</th>
+                <th>Check-out Location</th>
             </tr>
+
         </thead>
 
         <tbody>
 
-            @forelse($data as $index => $employee)
+            @forelse($markets as $index => $market)
 
                 <tr>
-                    <td>{{ $index + 1 }}</td>
 
                     <td>
-                        {{ $employee->employee_id ?? 'N/A' }}
+                        {{ $index + 1 }}
                     </td>
 
                     <td>
-                        {{ $employee->employee_name ?? 'N/A' }}
+                        {{ $market->market_name ?? 'N/A' }}
                     </td>
 
                     <td>
-                        {{ $employee->phone ?? 'N/A' }}
+                        {{ $market->market_address ?? 'N/A' }}
                     </td>
 
                     <td>
-                        {{ $employee->email ?? 'N/A' }}
+                        {{ $market->hierarchy_level ?? 'N/A' }}
                     </td>
 
                     <td>
-                        {{ ucfirst($employee->employee_status ?? 'N/A') }}
-                    </td>
-
-                    <td class="{{ $employee->user_id ? 'registered' : 'unregistered' }}">
-                        {{ $employee->registration_status }}
+                        {{ $market->hierarchy_node ?? 'N/A' }}
                     </td>
 
                     <td>
-                        {{ $employee->user_id ?? 'N/A' }}
+                        {{ $market->employee_name ?? 'N/A' }}
+                    </td>
+
+                    <td class="{{ $market->visit_id ? 'visited' : 'not-visited' }}">
+
+                        @if($market->visit_id)
+
+                            @if($market->visit_end_time)
+                                Completed
+                            @else
+                                Active
+                            @endif
+
+                        @else
+                            Not Visited
+                        @endif
+
                     </td>
 
                     <td>
-                        {{ ucfirst($employee->user_status ?? 'N/A') }}
-                    </td>
-
-                    <td>
-                        {{ $employee->registered_at
-                            ? \Carbon\Carbon::parse($employee->registered_at)->format('d M Y h:i A')
+                        {{ $market->visit_start_time
+                            ? \Carbon\Carbon::parse($market->visit_start_time)->format('d M Y h:i A')
                             : 'N/A'
                         }}
                     </td>
+
+                    <td>
+                        {{ $market->visit_end_time
+                            ? \Carbon\Carbon::parse($market->visit_end_time)->format('d M Y h:i A')
+                            : 'N/A'
+                        }}
+                    </td>
+
+                    <td>
+                        {{ $market->duration ?? 'N/A' }}
+                    </td>
+
+                    <td>
+                        @if($market->check_in_latitude && $market->check_in_longitude)
+
+                            Lat: {{ $market->check_in_latitude }}
+                            <br>
+                            Long: {{ $market->check_in_longitude }}
+
+                        @else
+                            N/A
+                        @endif
+                    </td>
+
+                    <td>
+                        @if($market->check_out_latitude && $market->check_out_longitude)
+
+                            Lat: {{ $market->check_out_latitude }}
+                            <br>
+                            Long: {{ $market->check_out_longitude }}
+
+                        @else
+                            N/A
+                        @endif
+                    </td>
+
                 </tr>
 
             @empty
 
                 <tr>
-                    <td colspan="10" style="text-align:center;">
-                        No Employee Registration Records Found
+                    <td colspan="12" class="text-center">
+                        No Market Visit Records Found
                     </td>
                 </tr>
 
@@ -265,8 +350,12 @@
     </table>
 
 
-    <div style="margin-top: 10px; text-align: right;">
-        <strong>Total Records:</strong> {{ $data->count() }}
+    <!-- TOTAL RECORDS -->
+
+    <div class="footer">
+
+        Total Records: {{ $markets->count() }}
+
     </div>
 
 </body>

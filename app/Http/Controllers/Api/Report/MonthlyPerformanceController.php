@@ -644,8 +644,7 @@ class MonthlyPerformanceController extends Controller
             'message' => 'Monthly performance report retrieved successfully.',
 
             'filters' => [
-
-                'company_id' => $companyId,
+               
 
                 'period' => $period,
 
@@ -661,7 +660,7 @@ class MonthlyPerformanceController extends Controller
 
                 'user_id' => $request->user_id,
 
-                'attendance_role_id' => $request->attendance_role_id,
+                // 'attendance_role_id' => $request->attendance_role_id,
             ],
 
             'summary' => $summary,
