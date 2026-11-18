@@ -9,6 +9,7 @@ class NotificationController extends Controller
 {
     public function index(Request $request)
     {
+        $this->authorizeAction('view');
         $validated = $request->validate([
             'per_page' => 'sometimes|integer|min:1|max:100',
         ]);
@@ -35,6 +36,7 @@ class NotificationController extends Controller
 
     public function markAsRead(Request $request, string $notificationId)
     {
+        $this->authorizeAction('edit');
         $notification = $request->user()->notifications()
             ->whereKey($notificationId)
             ->firstOrFail();
@@ -55,6 +57,7 @@ class NotificationController extends Controller
 
     public function markAllAsRead(Request $request)
     {
+        $this->authorizeAction('edit');
         $updated = $request->user()->unreadNotifications()
             ->update(['read_at' => now(), 'updated_at' => now()]);
 
@@ -63,5 +66,11 @@ class NotificationController extends Controller
             'message' => 'Unread notifications marked as read.',
             'updated_count' => $updated,
         ]);
+    }
+
+    
+    private function authorizeAction(string $action): void
+    {
+        abort_unless(auth()->user()?->can('notification.' . $action), 403, 'You do not have permission to ' . $action . ' orders.');
     }
 }

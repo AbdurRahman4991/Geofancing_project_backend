@@ -11,8 +11,10 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class AttendanceReportController extends Controller
 {
+    
      public function index(Request $request)
     {
+        $this->authorizeAction('view');
         $validated = $request->validate([
             'period' => [
                 'nullable',
@@ -316,4 +318,9 @@ class AttendanceReportController extends Controller
             ],
         ]);
     }
+
+    private function authorizeAction(string $action): void
+    {
+        abort_unless(auth()->user()?->can('attendance-report.' . $action), 403, 'You do not have permission to ' . $action . ' orders.');
+    }    
 }

@@ -95,7 +95,14 @@ class PermissionSeeder extends Seeder
             'user.create',	
             'user.edit',	
             'user.update',	
-            'user.view' 
+            'user.view',
+            'notification.view',
+            'notification.edit',
+            'order-report.view',
+            'attendance-report.view',
+            'employee-register-report.view',
+            'market-visit-report.view',
+            'monthly-performance-report.view'
 
         ];
 

@@ -14,6 +14,7 @@ class MonthlyPerformanceController extends Controller
 {
      public function index(Request $request)
     {
+        $this->authorizeAction('view');
         $request->validate([
             'period' => [
                 'nullable',
@@ -684,4 +685,9 @@ class MonthlyPerformanceController extends Controller
 
         ]);
     }
+
+    private function authorizeAction(string $action): void
+    {
+        abort_unless(auth()->user()?->can('monthly-performance-report.' . $action), 403, 'You do not have permission to ' . $action . ' orders.');
+    }    
 }

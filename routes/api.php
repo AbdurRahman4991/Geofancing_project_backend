@@ -92,14 +92,10 @@ Route::middleware('auth:sanctum', 'throttle:api-auth')->group(function () {
 
     // Report 
     Route::get('/report-market-visits', [MarketVisitReport::class, 'index']);
-    Route::get('/report-attendances',[AttendanceReportController::class, 'index'] );
-    // Route::middleware('auth:sanctum')->prefix('reports')->group(function () {
-    Route::get('/report-orders', [OrderReportController::class, 'index']);
-    // Route::get('/report-orders/items', [OrderReportController::class, 'items']);
-    // Route::get('/report-orders/export', [OrderReportController::class, 'export']);
+    Route::get('/report-attendances',[AttendanceReportController::class, 'index'] );   
+    Route::get('/report-orders', [OrderReportController::class, 'index']);    
     Route::get('/reports/monthly-performance', [MonthlyPerformanceController::class, 'index']);
     Route::get('/reports/employee',[EmployeeRegistrationReportController::class, 'index']);
-//});
           
 });
 
