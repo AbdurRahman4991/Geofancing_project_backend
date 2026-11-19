@@ -315,24 +315,23 @@ public function index(Request $request)
         }
 
         $employee = Employee::findOrFail($id);
-
-        $data = $request->validate([
-            'employee_id' => 'required|string|unique:employees,employee_id,' . $employee->id,
-             'name' => 'required|string|max:255',
-            'company_id' => 'nullable|exists:companies,id',
-            'phone' => 'required|string|max:20',
-            'status' => 'required|in:active,inactive,terminated',
-            'nature_of_employment' => 'required|string',
-            'department' => 'nullable|string|max:255',
-            'unit' => 'nullable|string|max:255',
-            'division' => 'nullable|string|max:255',
-            'designation' => 'nullable|string|max:255',
-            'reporting_person' => 'nullable|string|max:255',
-            'date_of_joining' => 'required|date',
-            'email' => 'nullable|email',
-            'dob' => 'nullable|date',
-            'section_info' => 'nullable|string|max:255',
-        ]);
+            $data = $request->validate([
+                'employee_id' => 'sometimes|required|string|unique:employees,employee_id,' . $employee->id,
+                'name' => 'sometimes|required|string|max:255',
+                'company_id' => 'sometimes|nullable|exists:companies,id',
+                'phone' => 'sometimes|required|string|max:20',
+                'status' => 'sometimes|required|in:active,inactive,terminated',
+                'nature_of_employment' => 'sometimes|required|string',
+                'department' => 'sometimes|nullable|string|max:255',
+                'unit' => 'sometimes|nullable|string|max:255',
+                'division' => 'sometimes|nullable|string|max:255',
+                'designation' => 'sometimes|nullable|string|max:255',
+                'reporting_person' => 'sometimes|nullable|string|max:255',
+                'date_of_joining' => 'sometimes|required|date',
+                'email' => 'sometimes|nullable|email',
+                'dob' => 'sometimes|nullable|date',
+                'section_info' => 'sometimes|nullable|string|max:255',
+            ]);
 
         $employee->update($data);
         return $employee;

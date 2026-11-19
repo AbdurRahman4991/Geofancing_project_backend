@@ -67,6 +67,13 @@ class AuthController extends Controller
             ], 404);
         }
 
+            // Check employee status
+        if ($employee->status !== 'active') {
+            return response()->json([
+                'message' => 'Your employee account is inactive. Please contact your company administrator.',
+            ], 403);
+        }
+
         if (User::where('employee_id', $employee->id)->exists()) {
             return response()->json([
                 'message' => 'This employee already has a user account.',
@@ -106,13 +113,28 @@ class AuthController extends Controller
             'status',
             'password',
         ])
+        // ->with([
+        //     'employee:id,name,employee_id,company_id,designation_id',
+        //     'hierarchyAssignments:id,user_id,hierarchy_node_id',
+        //     'hierarchyAssignments.hierarchyNode:id,name',
+        // ])
         ->with([
             'employee:id,name,employee_id,company_id,designation_id',
+            'employee.company:id,name,status',
             'hierarchyAssignments:id,user_id,hierarchy_node_id',
             'hierarchyAssignments.hierarchyNode:id,name',
         ])
         ->where('email', $request->email)
         ->first();
+
+        $company = $user->employee?->company;
+
+        if (!$company || $company->status !== 'Active') {
+            return response()->json([
+                'status' => 403,
+                'message' => 'Your company account is inactive. Please contact administrator.',
+            ], 403);
+        }
 
         if (!$user || !Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
@@ -165,45 +187,7 @@ class AuthController extends Controller
             'geofancing'   => $userGeoFancing,
         ]);
     }
-
-    // public function adminLogin(Request $request)
-    // {
-    //     $request->validate([
-    //         'email'    => 'required|email',
-    //         'password' => 'required|string',
-    //     ]);
-
-    //     if (!Auth::attempt($request->only('email', 'password'))) {
-    //         throw ValidationException::withMessages([
-    //             'email' => ['The provided credentials are incorrect.'],
-    //         ]);
-    //     }
-
-    //     // Login User
-    //     $user = Auth::user();
-    //     $companyId = $user->company_id ?? $user->employee?->company_id;
-    //     $roleNames = $user->getRoleNames()->values();
-        
-    //     $user->tokens()->delete();
-        
-    //     $token = $user->createToken('admin-token')->plainTextToken;
-
-    //     return response()->json([
-    //         'status' => true,
-    //         'message' => 'Login successful.',
-    //         'token' => $token,
-    //         'token_type' => 'Bearer',
-    //         'user' => [
-    //             'id' => $user->id,
-    //             'name' => $user->name,
-    //             'email' => $user->email,
-    //             'company_id' => $companyId,
-    //             'roles' => $roleNames,
-    //         ]
-    //     ]);
-    // }
     
-
     public function adminLogin(Request $request)
     {
         $request->validate([
@@ -224,9 +208,24 @@ class AuthController extends Controller
         $companyId = $user->company_id ?? $user->employee?->company_id;
 
         // Get Company Information
+        // $company = $companyId
+        //     ? Company::find($companyId)
+        //     : null;
+
+        // Get Company Information
         $company = $companyId
             ? Company::find($companyId)
             : null;
+
+        // Check Company Status
+        if (!$company || $company->status !== 'Active') {
+            Auth::logout();
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Your company account is inactive. Please contact administrator.',
+            ], 403);
+        }        
 
         $roleNames = $user->getRoleNames()->values();
 

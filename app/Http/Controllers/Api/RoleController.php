@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Role;
 use App\Models\User;
+use App\Notifications\RoleAssignedNotification;
 use App\Traits\ScopesCompanyAccess;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -159,6 +160,7 @@ class RoleController extends Controller
         });
 
         $user->syncRoles($roles);
+        $user->notify(new RoleAssignedNotification($roles->pluck('name')->values()->all()));
 
         return response()->json([
             'status' => true,
