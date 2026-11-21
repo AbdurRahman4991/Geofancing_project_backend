@@ -120,7 +120,7 @@ class AuthController extends Controller
         // ])
         ->with([
             'employee:id,name,employee_id,company_id,designation_id',
-            'employee.company:id,name,status',
+            'employee.company:id,company_name,status',
             'hierarchyAssignments:id,user_id,hierarchy_node_id',
             'hierarchyAssignments.hierarchyNode:id,name',
         ])

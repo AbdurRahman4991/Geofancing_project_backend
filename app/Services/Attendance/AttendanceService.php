@@ -200,12 +200,12 @@ class AttendanceService
 
         $geofences = $this->geofencesForAssignments($assignments, $user);
 
-        if ($geofences->isEmpty()) {
-            return [
-                'success' => false,
-                'message' => 'No geofence is configured for this hierarchy assignment.'
-            ];
-        }
+        // if ($geofences->isEmpty()) {
+        //     return [
+        //         'success' => false,
+        //         'message' => 'No geofence is configured for this hierarchy assignment.'
+        //     ];
+        // }
 
 
         // ==========================================
@@ -242,8 +242,7 @@ class AttendanceService
         // ==========================================
         $attendance = Attendance::where('user_id', $user->id)
             //->where('geofence_id', $matchedGeofence->id)
-            ->whereDate('check_in_time', Carbon::today('Asia/Dhaka'))
-            ->whereNull('check_out_time')
+            ->where('check_in_date', Carbon::now('Asia/Dhaka')->toDateString())
             ->latest()
             ->first();
 
@@ -257,14 +256,16 @@ class AttendanceService
         // ==========================================
         // Step 4: Calculate work hour
         // ==========================================
-        $checkOutTime = Carbon::now('Asia/Dhaka');
+        $timezone = 'Asia/Dhaka';
+        $checkOutTime = Carbon::now($timezone);
 
-        $checkInTime = Carbon::parse(
-            $attendance->check_in_time,
-            'Asia/Dhaka'
-        );
+        // Datetime columns do not store a timezone. Parse the raw database
+        // value explicitly as Dhaka time instead of using the model cast,
+        // which uses the application's default timezone.
+        $rawCheckInTime = $attendance->getRawOriginal('check_in_time');
+        $checkInTime = Carbon::parse($rawCheckInTime, $timezone);
 
-        $workMinutes = $checkInTime->diffInMinutes($checkOutTime);
+        $workMinutes = (int) $checkInTime->diffInMinutes($checkOutTime, true);
 
         $hours = floor($workMinutes / 60);
         $minutes = $workMinutes % 60;
@@ -295,9 +296,6 @@ class AttendanceService
             ];
         }
 
-        // ==========================================
-        // Step 5: Calculate Early Out
-        // ==========================================
 
         // ==========================================
         // Step 5: Calculate Early Out
@@ -307,28 +305,28 @@ class AttendanceService
             $checkOutTime->toDateString() . ' ' . $attendanceRule->office_out_time,
             'Asia/Dhaka'
         );
-\Log::info('Early Out Debug', [
-    'office_out_time_from_db' => $attendanceRule->office_out_time,
-    'check_out_time' => $checkOutTime->format('Y-m-d H:i:s'),
-    'office_out_datetime' => $officeOutTime->format('Y-m-d H:i:s'),
-    'is_early' => $checkOutTime->lessThan($officeOutTime),
-]);
+        \Log::info('Early Out Debug', [
+            'office_out_time_from_db' => $attendanceRule->office_out_time,
+            'check_out_time' => $checkOutTime->format('Y-m-d H:i:s'),
+            'office_out_datetime' => $officeOutTime->format('Y-m-d H:i:s'),
+            'is_early' => $checkOutTime->lessThan($officeOutTime),
+        ]);
 
-$earlyOutFormatted = null;
+        $earlyOutFormatted = null;
 
-if ($checkOutTime->lessThan($officeOutTime)) {
+        if ($checkOutTime->lessThan($officeOutTime)) {
 
-    $earlyMinutes = (int) $checkOutTime->diffInMinutes($officeOutTime);
+            $earlyMinutes = (int) $checkOutTime->diffInMinutes($officeOutTime);
 
-    $hours = intdiv($earlyMinutes, 60);
-    $minutes = $earlyMinutes % 60;
+            $hours = intdiv($earlyMinutes, 60);
+            $minutes = $earlyMinutes % 60;
 
-    $earlyOutFormatted = sprintf(
-        '%02d hour %02d minute',
-        $hours,
-        $minutes
-    );
-}
+            $earlyOutFormatted = sprintf(
+                '%02d hour %02d minute',
+                $hours,
+                $minutes
+            );
+        }
         // ==========================================
         // Step 5: Update attendance
         // ==========================================
