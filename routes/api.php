@@ -34,6 +34,7 @@ use App\Http\Controllers\Api\Report\AttendanceReportController;
 use App\Http\Controllers\Api\Report\OrderReportController;
 use App\Http\Controllers\Api\Report\MonthlyPerformanceController;
 use App\Http\Controllers\Api\Report\EmployeeRegistrationReportController;
+use App\Http\Controllers\Api\TourPlanController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -57,6 +58,14 @@ Route::middleware('auth:sanctum', 'throttle:api-auth')->group(function () {
     Route::post('/check-in', [AttendanceController::class, 'checkIn']);
     Route::post('/check-out', [AttendanceController::class, 'checkOut']);
     Route::post('/market-visits', [MarketVisitController::class, 'CreateMarketVisit']);
+    Route::get('/tour-plans', [TourPlanController::class, 'index']);
+    Route::post('/tour-plans', [TourPlanController::class, 'store']);
+    Route::get('/tour-plans/{tourPlan}', [TourPlanController::class, 'show']);
+    Route::put('/tour-plans/{tourPlan}', [TourPlanController::class, 'update']);
+    Route::post('/tour-plans/{tourPlan}/submit', [TourPlanController::class, 'submit']);
+    Route::post('/tour-plans/{tourPlan}/approve', [TourPlanController::class, 'approve']);
+    Route::post('/tour-plans/{tourPlan}/reject', [TourPlanController::class, 'reject']);
+    Route::post('/tour-plans/{tourPlan}/cancel', [TourPlanController::class, 'cancel']);
     Route::get('/attendance/history', [AttendanceController::class, 'history']);
     Route::patch('/attendance/{attendanceId}', [AttendanceController::class, 'update']);
     Route::apiResource('companies', CompanyController::class);
