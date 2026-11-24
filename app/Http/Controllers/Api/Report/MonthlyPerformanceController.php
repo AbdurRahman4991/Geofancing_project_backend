@@ -9,13 +9,18 @@ use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Validation\Rule;
 use Illuminate\Pagination\LengthAwarePaginator;
+use App\Services\Hierarchy\HierarchyAccessService;
 
 class MonthlyPerformanceController extends Controller
 {
      public function index(Request $request)
     {
         $this->authorizeAction('view');
+        $authUser = auth()->user();
+        $isSuperAdmin = $authUser->hasAnyRole(['Super-Admin', 'super-admin']);
+        $isCompanyAdmin = $authUser->hasAnyRole(['Company Admin', 'company-admin', 'admin']);
         $request->validate([
+            'company_id' => [$isSuperAdmin ? 'required' : 'prohibited', 'integer', 'exists:companies,id'],
             'period' => [
                 'nullable',
                 Rule::in(['daily', 'weekly', 'monthly', 'yearly', 'custom'])
@@ -44,13 +49,14 @@ class MonthlyPerformanceController extends Controller
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
 
-        $authUser = auth()->user();
-
         // =====================================
         // COMPANY SECURITY
         // =====================================
 
-        $companyId = $authUser->company_id;
+        $companyId = $isSuperAdmin ? (int) $request->company_id : $authUser->company_id;
+        if (!$companyId) {
+            return response()->json(['message' => 'Company not found for this user.'], 403);
+        }
 
         $company = DB::table('companies')
             ->where('id', $companyId)
@@ -118,6 +124,26 @@ class MonthlyPerformanceController extends Controller
         $employeesQuery = DB::table('users')
             ->where('users.company_id', $companyId)
             ->where('users.status', 'active');
+
+        if (!$isSuperAdmin && !$isCompanyAdmin) {
+            $access = app(HierarchyAccessService::class);
+            $nodeIds = $access->currentAssignments()->where('company_id', $companyId)
+                ->flatMap(fn ($assignment) => $assignment->hierarchy_node_id && $assignment->hierarchyNode
+                    ? $access->branchIds($companyId, (int) $assignment->hierarchy_node_id) : [])
+                ->unique()->values()->all();
+            if (!$nodeIds) {
+                $employeesQuery->whereRaw('1 = 0');
+            } else {
+                $employeesQuery->whereExists(function ($query) use ($companyId, $nodeIds) {
+                    $query->select(DB::raw(1))
+                        ->from('employee_hierarchy_assignments as eha')
+                        ->whereColumn('eha.user_id', 'users.id')
+                        ->where('eha.company_id', $companyId)
+                        ->where('eha.is_current', true)
+                        ->whereIn('eha.hierarchy_node_id', $nodeIds);
+                });
+            }
+        }
 
         if ($request->filled('user_id')) {
             $employeesQuery->where(

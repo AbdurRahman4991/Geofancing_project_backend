@@ -146,7 +146,7 @@ class HierarchyAccessService
     }
 
     /** @return int[] */
-    private function hierarchyNodeBranchIds(int $companyId, int $nodeId): array
+    public function branchIds(int $companyId, int $nodeId): array
     {
         $nodeIds = [$nodeId];
         $frontier = $nodeIds;
@@ -158,5 +158,10 @@ class HierarchyAccessService
             $nodeIds = array_merge($nodeIds, $frontier);
         }
         return $nodeIds;
+    }
+
+    private function hierarchyNodeBranchIds(int $companyId, int $nodeId): array
+    {
+        return $this->branchIds($companyId, $nodeId);
     }
 }

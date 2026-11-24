@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Services\Hierarchy\HierarchyAccessService;
 
 class MarketVisitReport extends Controller
 {
@@ -15,7 +16,11 @@ class MarketVisitReport extends Controller
 public function index(Request $request)
 {
     $this->authorizeAction('view');
+    $user = auth()->user();
+    $isSuperAdmin = $user->hasAnyRole(['Super-Admin', 'super-admin']);
+    $isCompanyAdmin = $user->hasAnyRole(['Company Admin', 'company-admin', 'admin']);
     $request->validate([
+        'company_id' => [$isSuperAdmin ? 'required' : 'prohibited', 'integer', 'exists:companies,id'],
         'period' => [
             'nullable',
             Rule::in(['daily', 'weekly', 'monthly', 'yearly', 'custom'])
@@ -38,13 +43,14 @@ public function index(Request $request)
         'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
     ]);
 
-    $user = auth()->user();
-
     // =====================================
     // COMPANY SECURITY
     // =====================================
 
-    $companyId = $user->company_id;
+    $companyId = $isSuperAdmin ? (int) $request->company_id : $user->company_id;
+    if (!$companyId) {
+        return response()->json(['message' => 'Company not found for this user.'], 403);
+    }
     $company = DB::table('companies')
     ->where('id', $companyId)
     ->first();
@@ -111,9 +117,12 @@ public function index(Request $request)
             $request
         ) {
             $join->on('mv.geofence_id', '=', 'g.id')
-                ->where('mv.company_id', $companyId)
                 ->where('mv.visit_start_time', '>=', $fromDate)
                 ->where('mv.visit_start_time', '<', $toDate);
+
+            if ($companyId) {
+                $join->where('mv.company_id', $companyId);
+            }
 
             // Selected User Filter
             if ($request->filled('user_id')) {
@@ -124,6 +133,15 @@ public function index(Request $request)
         ->leftJoin('users as u', 'u.id', '=', 'mv.user_id')
 
         ->where('g.company_id', $companyId);
+
+    if (!$isSuperAdmin && !$isCompanyAdmin) {
+        $access = app(HierarchyAccessService::class);
+        $nodeIds = $access->currentAssignments()->where('company_id', $companyId)
+            ->flatMap(fn ($assignment) => $assignment->hierarchy_node_id && $assignment->hierarchyNode
+                ? $access->branchIds($companyId, (int) $assignment->hierarchy_node_id) : [])
+            ->unique()->values()->all();
+        $nodeIds ? $query->whereIn('g.hierarchy_node_id', $nodeIds) : $query->whereRaw('1 = 0');
+    }
 
     // =====================================
     // HIERARCHY LEVEL FILTER

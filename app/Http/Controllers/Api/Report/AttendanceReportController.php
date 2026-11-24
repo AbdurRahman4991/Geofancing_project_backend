@@ -8,6 +8,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Services\Hierarchy\HierarchyAccessService;
 
 class AttendanceReportController extends Controller
 {
@@ -15,6 +16,10 @@ class AttendanceReportController extends Controller
      public function index(Request $request)
     {
         $this->authorizeAction('view');
+        $authUser = $request->user();
+        $isSuperAdmin = $authUser->hasAnyRole(['Super-Admin', 'super-admin']);
+        $isCompanyAdmin = $authUser->hasAnyRole(['Company Admin', 'company-admin', 'admin']);
+
         $validated = $request->validate([
             'period' => [
                 'nullable',
@@ -26,6 +31,7 @@ class AttendanceReportController extends Controller
             'export' => ['nullable', Rule::in(['excel', 'pdf']),],
 
             'user_id' => ['nullable', 'integer'],
+            'company_id' => [$isSuperAdmin ? 'nullable' : 'prohibited', 'integer', 'exists:companies,id'],
             'hierarchy_level_id' => ['nullable', 'integer'],
             'hierarchy_node_id' => ['nullable', 'integer'],
 
@@ -46,17 +52,19 @@ class AttendanceReportController extends Controller
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
 
-        $companyId = auth()->user()->company_id;
+        $companyId = $isSuperAdmin
+            ? ($validated['company_id'] ?? null)
+            : $authUser->company_id;
 
-        if (!$companyId) {
+        if (!$isSuperAdmin && !$companyId) {
             return response()->json([
                 'message' => 'Company not found for this user.',
             ], 403);
         }
 
-        $company = DB::table('companies')
-        ->where('id', $companyId)
-        ->first();
+        $company = $companyId
+            ? DB::table('companies')->where('id', $companyId)->first()
+            : null;
 
         // -----------------------------------------
         // 1. Date range
@@ -115,7 +123,16 @@ class AttendanceReportController extends Controller
             ->leftJoin('employee_hierarchy_assignments as assignments', function ($join) {
                 $join->on('assignments.user_id', '=', 'users.id')
                     ->on('assignments.company_id', '=', 'attendances.company_id')
-                    ->where('assignments.is_current', true);
+                    ->where('assignments.is_current', true)
+                    // A user may have multiple current hierarchy assignments.
+                    // Join only the first one so each attendance stays a single row.
+                    ->whereRaw("assignments.id = (
+                        SELECT MIN(current_assignments.id)
+                        FROM employee_hierarchy_assignments AS current_assignments
+                        WHERE current_assignments.user_id = users.id
+                          AND current_assignments.company_id = attendances.company_id
+                          AND current_assignments.is_current = true
+                    )");
             })
 
             ->leftJoin(
@@ -132,11 +149,35 @@ class AttendanceReportController extends Controller
                 'hierarchy_nodes.hierarchy_level_id'
             )
 
-            ->where('attendances.company_id', $companyId)
             ->whereBetween('attendances.check_in_date', [
                 $fromDateString,
                 $toDateString,
             ]);
+
+        if ($companyId) {
+            $query->where('attendances.company_id', $companyId);
+        }
+
+        if (!$isSuperAdmin && !$isCompanyAdmin) {
+            $assignmentService = app(HierarchyAccessService::class);
+            $assignments = $assignmentService->currentAssignments()
+                ->where('company_id', $companyId);
+
+            $accessibleNodeIds = $assignments->flatMap(function ($assignment) use ($assignmentService) {
+                $nodeId = $assignment->hierarchy_node_id;
+                $node = $assignment->hierarchyNode;
+
+                return ($nodeId && $node)
+                    ? $assignmentService->branchIds((int) $node->company_id, (int) $nodeId)
+                    : [];
+            })->unique()->values()->all();
+
+            if (!$accessibleNodeIds) {
+                $query->whereRaw('1 = 0');
+            } else {
+                $query->whereIn('assignments.hierarchy_node_id', $accessibleNodeIds);
+            }
+        }
 
         // -----------------------------------------
         // 3. Optional filters

@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Services\Hierarchy\HierarchyAccessService;
 
 class OrderReportController extends Controller
 {
@@ -15,7 +16,10 @@ class OrderReportController extends Controller
     public function index(Request $request)
     {
         $this->authorizeAction('view');
-        $companyId = auth()->user()->company_id;
+        $authUser = auth()->user();
+        $isSuperAdmin = $authUser->hasAnyRole(['Super-Admin', 'super-admin']);
+        $isCompanyAdmin = $authUser->hasAnyRole(['Company Admin', 'company-admin', 'admin']);
+        $companyId = $isSuperAdmin ? $request->input('company_id') : $authUser->company_id;
                 
 
         if (!$companyId || !is_numeric($companyId)) {
@@ -34,6 +38,7 @@ class OrderReportController extends Controller
         */
 
         $validated = $request->validate([
+            'company_id' => [$isSuperAdmin ? 'required' : 'prohibited', 'integer', 'exists:companies,id'],
             'from_date' => [
                 'nullable',
                 'date',
@@ -135,7 +140,15 @@ class OrderReportController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $this->applyFilters($query, $validated, $companyId);
+        $accessibleNodeIds = null;
+        if (!$isSuperAdmin && !$isCompanyAdmin) {
+            $access = app(HierarchyAccessService::class);
+            $accessibleNodeIds = $access->currentAssignments()->where('company_id', $companyId)
+                ->flatMap(fn ($assignment) => $assignment->hierarchy_node_id && $assignment->hierarchyNode
+                    ? $access->branchIds($companyId, (int) $assignment->hierarchy_node_id) : [])
+                ->unique()->values()->all();
+        }
+        $this->applyFilters($query, $validated, $companyId, $accessibleNodeIds);
 
         /*
         |--------------------------------------------------------------------------
@@ -442,7 +455,7 @@ class OrderReportController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    private function applyFilters($query, array $filters, int $companyId): void
+    private function applyFilters($query, array $filters, int $companyId, ?array $accessibleNodeIds = null): void
     {
         /*
          * Date Range
@@ -559,11 +572,12 @@ class OrderReportController extends Controller
 
         $hasHierarchyFilter =
             !empty($filters['hierarchy_level_id']) ||
-            !empty($filters['hierarchy_node_id']);
+            !empty($filters['hierarchy_node_id']) ||
+            $accessibleNodeIds !== null;
 
         if ($hasHierarchyFilter) {
 
-            $query->whereExists(function ($subQuery) use ($filters, $companyId) {
+            $query->whereExists(function ($subQuery) use ($filters, $companyId, $accessibleNodeIds) {
 
                 $subQuery->selectRaw('1')
                     ->from('employee_hierarchy_assignments as eha')
@@ -578,6 +592,14 @@ class OrderReportController extends Controller
                     ->where('eha.is_current', true)
                     ->where('hn.company_id', $companyId)
                     ->where('hn.status', 'active');
+
+                if ($accessibleNodeIds !== null) {
+                    if (!$accessibleNodeIds) {
+                        $subQuery->whereRaw('1 = 0');
+                    } else {
+                        $subQuery->whereIn('hn.id', $accessibleNodeIds);
+                    }
+                }
 
                 if (!empty($filters['hierarchy_level_id'])) {
                     $subQuery->where(
