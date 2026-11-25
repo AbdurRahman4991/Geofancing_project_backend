@@ -54,6 +54,14 @@ class PermissionSeeder extends Seeder
             'hierarchy-node.edit',	
             'hierarchy-node.view',
             'hierarchy-node.update',	
+            'country-hierarchy-level.create',
+            'country-hierarchy-level.edit',
+            'country-hierarchy-level.view',
+            'country-hierarchy-level.update',
+            'country-hierarchy-node.create',
+            'country-hierarchy-node.edit',
+            'country-hierarchy-node.view',
+            'country-hierarchy-node.update',
             'market.create',	
             'market.edit',	
             'market.update',	
@@ -102,7 +110,15 @@ class PermissionSeeder extends Seeder
             'attendance-report.view',
             'employee-register-report.view',
             'market-visit-report.view',
-            'monthly-performance-report.view'
+            'monthly-performance-report.view',
+            'tour-plan.view',
+            'tour-plan.create',
+            'tour-plan.edit',
+            'tour-plan.update',
+            'tour-plan.submit',
+            'tour-plan.approve',
+            'tour-plan.reject',
+            'tour-plan.cancel',
 
         ];
 

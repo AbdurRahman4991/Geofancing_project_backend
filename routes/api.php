@@ -27,6 +27,8 @@ use App\Http\Controllers\Api\Product\ProductPriceController;
 use App\Http\Controllers\Api\Hierarchy\EmployeeHierarchyAssignController;
 use App\Http\Controllers\Api\Hierarchy\HierarchyLevelController;
 use App\Http\Controllers\Api\Hierarchy\HierarchyNodeController;
+use App\Http\Controllers\Api\CountryHierarchy\CountryHiearchyLevelController;
+use App\Http\Controllers\Api\CountryHierarchy\CountryHiearchyNodeController;
 use App\Http\Controllers\Api\Order\OrderController;
 use App\Http\Controllers\Api\Market\MarketVisitController;
 use App\Http\Controllers\Api\Report\MarketVisitReport;
@@ -96,6 +98,8 @@ Route::middleware('auth:sanctum', 'throttle:api-auth')->group(function () {
     Route::apiResource('attendance-rules', AttendanceRuleController::class);
     Route::apiResource('hierarchy-levels', HierarchyLevelController::class);
     Route::apiResource('hierarchy-nodes', HierarchyNodeController::class);
+    Route::apiResource('country-hierarchy-levels', CountryHiearchyLevelController::class);
+    Route::apiResource('country-hierarchy-nodes', CountryHiearchyNodeController::class);
     Route::apiResource('employee-hierarchy-assignments', EmployeeHierarchyAssignController::class );
     Route::get('roles/{roleId}/permissions',[RoleController::class, 'getRolePermissions']);
 
