@@ -119,6 +119,14 @@ class PermissionSeeder extends Seeder
             'tour-plan.approve',
             'tour-plan.reject',
             'tour-plan.cancel',
+            'approval-workflow.create',
+            'approval-workflow.edit',
+            'approval-workflow.view',
+            'approval-workflow.update',
+            'approval-workflow.delete',
+            'approval.view',
+            'approval.approve',
+            'approval.reject',
 
         ];
 

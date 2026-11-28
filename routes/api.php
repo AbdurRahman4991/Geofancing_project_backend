@@ -38,6 +38,8 @@ use App\Http\Controllers\Api\Report\OrderReportController;
 use App\Http\Controllers\Api\Report\MonthlyPerformanceController;
 use App\Http\Controllers\Api\Report\EmployeeRegistrationReportController;
 use App\Http\Controllers\Api\TourPlanController;
+use App\Http\Controllers\Api\Approval\ApprovalController;
+use App\Http\Controllers\Api\Approval\ApprovalWorkflowController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -69,6 +71,12 @@ Route::middleware('auth:sanctum', 'throttle:api-auth')->group(function () {
     Route::post('/tour-plans/{tourPlan}/approve', [TourPlanController::class, 'approve']);
     Route::post('/tour-plans/{tourPlan}/reject', [TourPlanController::class, 'reject']);
     Route::post('/tour-plans/{tourPlan}/cancel', [TourPlanController::class, 'cancel']);
+    Route::apiResource('approval-workflows', ApprovalWorkflowController::class);
+    Route::get('/approvals/pending', [ApprovalController::class, 'pending']);
+    Route::get('/approvals/{id}/history', [ApprovalController::class, 'history']);
+    Route::get('/approvals/{id}', [ApprovalController::class, 'show']);
+    Route::post('/approvals/{id}/approve', [ApprovalController::class, 'approve']);
+    Route::post('/approvals/{id}/reject', [ApprovalController::class, 'reject']);
     Route::get('/attendance/history', [AttendanceController::class, 'history']);
     Route::patch('/attendance/{attendanceId}', [AttendanceController::class, 'update']);
     Route::apiResource('companies', CompanyController::class);

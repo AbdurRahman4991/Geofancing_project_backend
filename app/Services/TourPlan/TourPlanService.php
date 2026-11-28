@@ -8,12 +8,16 @@ use App\Models\MarketVisit;
 use App\Models\TourPlan;
 use App\Models\User;
 use App\Services\Hierarchy\HierarchyAccessService;
+use App\Services\Approval\ApprovalService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class TourPlanService
 {
-    public function __construct(private readonly HierarchyAccessService $hierarchyAccessService) {}
+    public function __construct(
+        private readonly HierarchyAccessService $hierarchyAccessService,
+        private readonly ApprovalService $approvalService,
+    ) {}
 
     public function index(User $user, array $filters)
     {
@@ -78,30 +82,54 @@ class TourPlanService
     {
         $this->ensureCanView($actor, $plan);
         abort_unless(in_array($plan->status, ['draft', 'rejected'], true), 409, 'This tour plan cannot be submitted in its current status.');
-        $plan->update(['status' => 'pending', 'reviewed_by' => null, 'reviewed_at' => null, 'review_note' => null]);
+        DB::transaction(function () use ($actor, $plan) {
+            $requester = User::query()->where('company_id', $plan->company_id)->findOrFail($plan->user_id);
+            $this->approvalService->submitForApproval((int) $plan->company_id, 'tour_plan', (int) $plan->id, $requester);
+            $plan->update(['status' => 'pending', 'reviewed_by' => null, 'reviewed_at' => null, 'review_note' => null]);
+        });
         return $this->loadPlan($plan->fresh(), false);
     }
 
     public function approve(User $actor, TourPlan $plan, array $data): TourPlan
     {
-        $this->ensureCanReview($actor, $plan);
         abort_unless($plan->status === 'pending', 409, 'Only pending plans can be approved.');
-        $plan->update(['status' => 'approved', 'reviewed_by' => $actor->id, 'reviewed_at' => now(), 'review_note' => $data['review_note'] ?? null]);
+        $approval = $this->pendingApprovalFor($actor, $plan);
+        $result = $this->approvalService->approve($approval->id, $actor, $data['review_note'] ?? null);
+        if ($result->status === 'approved') {
+            $plan->update(['status' => 'approved', 'reviewed_by' => $actor->id, 'reviewed_at' => now(), 'review_note' => $data['review_note'] ?? null]);
+        }
         return $this->loadPlan($plan->fresh(), false);
     }
 
     public function reject(User $actor, TourPlan $plan, array $data): TourPlan
     {
-        $this->ensureCanReview($actor, $plan);
         abort_unless($plan->status === 'pending', 409, 'Only pending plans can be rejected.');
+        $approval = $this->pendingApprovalFor($actor, $plan);
+        $this->approvalService->reject($approval->id, $actor, $data['review_note']);
         $plan->update(['status' => 'rejected', 'reviewed_by' => $actor->id, 'reviewed_at' => now(), 'review_note' => $data['review_note']]);
         return $this->loadPlan($plan->fresh(), false);
+    }
+
+    private function pendingApprovalFor(User $actor, TourPlan $plan)
+    {
+        $query = \App\Models\ApprovalRequest::query()->where('company_id', $plan->company_id)
+            ->where('module', 'tour_plan')->where('document_id', $plan->id)->where('status', 'pending')->latest('id');
+        $approval = $query->firstOrFail();
+        $actorCompanyId = $actor->company_id ?? $actor->employee?->company_id;
+        abort_unless((int) $actorCompanyId === (int) $plan->company_id || $this->isSuperAdmin($actor), 404);
+        abort_unless($this->approvalService->canApprove($approval, $actor), 403, 'You are not the assigned approver for the active step.');
+        return $approval;
     }
 
     public function cancel(User $actor, TourPlan $plan): TourPlan
     {
         $this->ensureCanView($actor, $plan);
         abort_unless(in_array($plan->status, ['draft', 'pending', 'rejected'], true), 409, 'This tour plan cannot be cancelled in its current status.');
+        if ($plan->status === 'pending') {
+            $approval = \App\Models\ApprovalRequest::query()->where('company_id', $plan->company_id)
+                ->where('module', 'tour_plan')->where('document_id', $plan->id)->where('status', 'pending')->latest('id')->firstOrFail();
+            $this->approvalService->cancelForRequester($approval->id, $actor);
+        }
         $plan->update(['status' => 'cancelled']);
         return $this->loadPlan($plan->fresh(), false);
     }
@@ -184,6 +212,7 @@ class TourPlanService
     private function loadPlan(TourPlan $plan, bool $includeVisits): TourPlan
     {
         $plan->load(['employee:id,name,email', 'creator:id,name', 'reviewer:id,name', 'stops.geofence:id,firm_name,address,latitude,longitude']);
+        $plan->setAttribute('approval_request_id', $plan->approvalRequests()->value('id'));
         if ($includeVisits) {
             $visits = MarketVisit::where('company_id', $plan->company_id)->where('user_id', $plan->user_id)->whereDate('visit_start_time', $plan->plan_date)->get()->keyBy('geofence_id');
             $plan->stops->each(function ($stop) use ($visits) {

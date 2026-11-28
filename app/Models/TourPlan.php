@@ -37,4 +37,9 @@ class TourPlan extends Model
     {
         return $this->hasMany(TourPlanStop::class)->orderBy('sequence');
     }
+
+    public function approvalRequests(): HasMany
+    {
+        return $this->hasMany(ApprovalRequest::class, 'document_id')->where('module', 'tour_plan')->latest('id');
+    }
 }
